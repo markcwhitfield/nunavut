@@ -1,0 +1,71 @@
+name:                Nunavut
+version:             0.1.0.0
+stability:           alpha
+synopsis:            Yet Another Haskell Nerual Network Library
+
+author:              Mark Whitfield
+maintainer:          markcwhitfield@gmail.com
+
+homepage:            github.com/markcwhitfield/nunavut
+bug-reports:         github.com/markcwhitfield/nunavut  
+
+license:             MIT
+license-file:        LICENSE
+copyright:           Mark Whitfield
+
+category:            Machine Learning
+build-type:          Simple
+data-files:          README
+
+cabal-version:       >=1.10
+
+-- description:         
+
+
+source-repository head
+  type:                git
+  location:            git://www.github.com/markcwhitfield/nunavut.git
+
+
+library
+  exposed-modules:     Nunavut
+  other-modules:       
+
+  hs-source-dirs:
+    src
+  build-depends:
+    containers    >= 0.5,
+    text          >= 1.1,
+    lens          >= 4.2,
+    hmatrix       >= 0.16,
+    mtl           >= 2.2,
+    base          == 4.7.*
+
+  default-language:    Haskell2010
+  default-extensions:  OverloadedStrings
+  other-extensions:    TemplateHaskell
+  ghc-options:         -Wall
+
+  
+test-suite nunavut-tests
+  type:     exitcode-stdio-1.0
+  main-is:  Main.hs
+
+  hs-source-dirs:
+    test, src
+  build-depends:
+    QuickCheck    >= 2.7,
+    hspec         >= 1.9,
+    hmatrix       >= 0.16,
+    containers    >= 0.5,
+    mtl           >= 2.2,
+    lens          >= 4.2,
+    base          == 4.7.*
+
+  default-language: Haskell2010
+  default-extensions:  OverloadedStrings, 
+                       DataKinds, 
+                       TypeOperators, 
+                       TypeFamilies, 
+                       Trustworthy
+  ghc-options:      -Wall
