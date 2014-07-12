@@ -32,7 +32,11 @@ library
   other-modules:       Nunavut.Layer,
                        Nunavut.Activator,
                        Nunavut.Filter,
-                       Nunavut.Newtypes
+                       Nunavut.Newtypes,
+                       Nunavut.NeuralNet,
+                       Nunavut.Util,
+                       Nunavut.Util.NonEmpty,
+                       Nunavut.Util.Dimensions
 
   hs-source-dirs:
     src
@@ -42,11 +46,13 @@ library
     lens          >= 4.2,
     hmatrix       >= 0.16,
     mtl           >= 2.2,
+    semigroups    >= 0.15,
     base          == 4.7.*
 
   default-language:    Haskell2010
   default-extensions:  OverloadedStrings
-  other-extensions:    TemplateHaskell 
+  other-extensions:    TemplateHaskell,
+                       MultiParamTypeClasses
                       
   ghc-options:         -Wall
 

@@ -12,11 +12,14 @@ module Nunavut.Newtypes (
   unErrSig,
   unWeights,
   unError,
-  DimMatchable
+  DimMatchable (..)
   )where
 
+import Control.Lens (to)
 import Data.Text.Lazy (Text)
-import Numeric.LinearAlgebra (Matrix, Vector, dim, cols)
+import Numeric.LinearAlgebra (Matrix, Vector, dim, cols, rows)
+
+import Nunavut.Util.Dimensions
 
 {--------------------------------------------------------------------------
 -                                 Types                                  -
@@ -43,14 +46,13 @@ mkError = Error
 
 
 {--------------------------------------------------------------------------
--                                Classes                                 -
---------------------------------------------------------------------------}
-class DimMatchable a b where
-  dimsMatch :: a -> b -> Bool
-
-{--------------------------------------------------------------------------
 -                               Instances                                -
 --------------------------------------------------------------------------}
+instance HasOutput Weights where
+  outSize = to $ cols . unWeights
+instance HasInput Weights where
+  inSize = to $ rows . unWeights
+
 instance DimMatchable Weights Activation where
   dimsMatch (Weights m) (Activ v)
     | dim v == cols m = True
