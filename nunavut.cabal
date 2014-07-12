@@ -52,7 +52,8 @@ library
   default-language:    Haskell2010
   default-extensions:  OverloadedStrings
   other-extensions:    TemplateHaskell,
-                       MultiParamTypeClasses
+                       MultiParamTypeClasses,
+                       FlexibleInstances
                       
   ghc-options:         -Wall
 
