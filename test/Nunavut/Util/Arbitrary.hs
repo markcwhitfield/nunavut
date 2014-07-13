@@ -12,7 +12,7 @@ import Nunavut.Layer
 import Nunavut.Newtypes
 import Nunavut.Util
 
-data (HasOutput a, HasInput b) => MatchingDims a b = Matching a b
+data (SizedOperator a, SizedOperator b) => MatchingDims a b = Matching a b
   deriving (Show, Eq)
 
 sizedWeights :: Int -> Int -> Gen Weights

@@ -40,11 +40,9 @@ instance Show Layer where
                        show f]
 
 
-instance HasInput Layer where
+instance SizedOperator Layer where
   inSize = weights . inSize
-
-instance HasOutput Layer where
-  outSize = weights . inSize
+  outSize = weights . outSize
 
 
 {--------------------------------------------------------------------------

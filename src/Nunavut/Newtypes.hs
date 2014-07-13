@@ -20,7 +20,7 @@ module Nunavut.Newtypes (
   frobNorm,
   elementwise,
   (<>)
-  )where
+  ) where
 
 import Prelude hiding (concat)
 
@@ -77,13 +77,12 @@ mkJacob = Jacob
 {--------------------------------------------------------------------------
 -                               Instances                                -
 --------------------------------------------------------------------------}
-instance HasOutput Weights where
+instance SizedOperator Weights where
   outSize = to $ rows . unWeights
-instance HasInput Weights where
   inSize = to $ cols . unWeights
-instance HasOutput Activation where
+
+instance SizedOperator Activation where
   outSize = to $ dim . unActiv
-instance HasInput Activation where
   inSize = outSize
 
 instance HasVec Activation where

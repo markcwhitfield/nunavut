@@ -6,6 +6,7 @@ import Test.QuickCheck
 
 import Nunavut.Layer
 import Nunavut.Newtypes
+import Nunavut.Util
 import Nunavut.Util.Arbitrary
 
 spec :: Spec

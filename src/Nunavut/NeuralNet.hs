@@ -5,11 +5,9 @@ module Nunavut.NeuralNet where
 import Prelude hiding (concat)
 
 import Data.List.NonEmpty (NonEmpty(..), (<|))
-import Data.Text.Lazy (concat, pack)
-import Control.Lens (makeLenses, over, (^.))
+import Control.Lens (makeLenses, over)
 
 import Nunavut.Layer
-import Nunavut.Newtypes
 import Nunavut.Util
 
 {--------------------------------------------------------------------------
@@ -24,9 +22,8 @@ makeLenses ''FFNet
 {--------------------------------------------------------------------------
 -                               Instances                                -
 --------------------------------------------------------------------------}
-instance HasInput FFNet where
+instance SizedOperator FFNet where
   inSize = layers . _last . inSize
-instance HasOutput FFNet where
   outSize = layers . _head . outSize
 
 
@@ -44,4 +41,4 @@ mkFFNet (l:ls) = mkFFNet ls >>= addLayer l
 --------------------------------------------------------------------------}
 addLayer :: Layer -> FFNet -> Either Error FFNet
 addLayer = ifDimsMatch doAdd
-  where doAdd l n = over layers (l <|) n
+  where doAdd l = over layers (l <|)
