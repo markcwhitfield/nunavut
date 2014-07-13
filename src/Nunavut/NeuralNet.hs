@@ -43,10 +43,5 @@ mkFFNet (l:ls) = mkFFNet ls >>= addLayer l
 -                            Helper Functions                            -
 --------------------------------------------------------------------------}
 addLayer :: Layer -> FFNet -> Either Error FFNet
-addLayer l n =  if dimsMatch n l
-                then Right $ over layers (l <|) n
-                else Left $ mkError $ concat [
-                           "Dimension Mismatch. New layer input size: ",
-                           pack . show $ l ^. inSize,
-                           "Current output iize ",
-                           pack . show $ n ^. inSize]
+addLayer = ifDimsMatch doAdd
+  where doAdd l n = over layers (l <|) n
