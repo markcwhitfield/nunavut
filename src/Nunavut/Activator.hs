@@ -44,10 +44,10 @@ linear :: Activator
 linear = Activator Linear id $ const 1
 
 tanhActivator :: Activator
-tanhActivator = Activator Tanh tanh ((1 -) . (** 2) . tan)
+tanhActivator = Activator Tanh tanh ((1 -) . (** 2) . tanh)
 
 logisticFunc :: Double -> Double
-logisticFunc z = 1 / (1 - exp (-z))
+logisticFunc z = 1 / (1 + exp (-z))
 
 logisticDeriv :: Double -> Double
 logisticDeriv z = s * (1 - s)

@@ -33,7 +33,7 @@ instance SizedOperator FFNet where
 mkFFNet :: [Layer] -> Either Error FFNet
 mkFFNet [] = Left $ mkError "Cannot instantiate empty FFNet"
 mkFFNet (l:[]) = Right . FFNet $ l :| []
-mkFFNet (l:ls) = mkFFNet ls >>= addLayer l
+mkFFNet (l:ls) = addLayer l =<< mkFFNet ls
 
 
 {--------------------------------------------------------------------------

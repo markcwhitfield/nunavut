@@ -22,8 +22,6 @@ module Nunavut.Newtypes (
   (<>)
   ) where
 
-import Prelude hiding (concat)
-
 import Control.Lens (to)
 import Numeric.LinearAlgebra (
   Matrix, Vector, dim, cols, rows, pnorm, NormType(..),
