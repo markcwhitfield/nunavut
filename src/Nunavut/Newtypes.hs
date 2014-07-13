@@ -19,6 +19,8 @@ module Nunavut.Newtypes (
   infNorm,
   frobNorm,
   elementwise,
+  HasVec(..),
+  HasMtx(..),
   (<>)
   ) where
 
@@ -79,6 +81,10 @@ instance SizedOperator Weights where
   outSize = to $ rows . unWeights
   inSize = to $ cols . unWeights
 
+instance SizedOperator Jacobian where
+  outSize = to $ rows . unJacob
+  inSize = to $ cols . unJacob
+
 instance SizedOperator Activation where
   outSize = to $ dim . unActiv
   inSize = outSize
@@ -92,6 +98,10 @@ instance HasVec ErrorSignal where
 instance HasMtx Weights where
   toMtx = unWeights
   fromMtx = mkWeights
+instance HasMtx Jacobian where
+  toMtx = unJacob
+  fromMtx = mkJacob
+
 
 instance HasNorm Activation where
   pNorm norm a = pnorm (toNormType norm) (unActiv a)

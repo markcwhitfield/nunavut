@@ -8,7 +8,7 @@ module Nunavut.Filter (
   ) where
 
 import Control.Lens (makeLenses, (^.))
-import Numeric.LinearAlgebra (diag, outer, ident, dim)
+import Numeric.LinearAlgebra (diag, outer, ident, dim, maxElement)
 
 import Nunavut.Newtypes
 
@@ -41,9 +41,9 @@ softmax :: Filter
 softmax = Filter Softmax softmaxFunc softmaxDeriv
 
 softmaxFunc :: Activation -> Activation
-softmaxFunc v = elementwise (/ l1Norm v) exponentiated
-  where exponentiated = elementwise (exp . (\e -> e - lInf)) v
-        lInf = infNorm v
+softmaxFunc v = elementwise (/ l1Norm exponentiated) exponentiated
+  where exponentiated = elementwise (exp . (\e -> e - maxV)) v
+        maxV = maxElement . unActiv $ v
 
 softmaxDeriv :: Activation -> Jacobian
 softmaxDeriv v = mkJacob $ diag s - (s `outer` s)

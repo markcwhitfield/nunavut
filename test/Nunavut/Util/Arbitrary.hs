@@ -15,6 +15,24 @@ import Nunavut.Util
 data (SizedOperator a, SizedOperator b) => MatchingDims a b = Matching a b
   deriving (Show, Eq)
 
+newtype (HasMtx a) => SmallMtx a = SmallMtx a
+  deriving (Show, Eq)
+newtype (HasVec a) => SmallVec a = SmallVec a
+  deriving (Show, Eq)
+
+instance (HasMtx a, Arbitrary a) => Arbitrary (SmallMtx a) where
+  arbitrary = do
+    rs <- choose (1,10)
+    cs <- choose (1,10)
+    vs <- vector (rs * cs)
+    return . SmallMtx . fromMtx $ (rs >< cs) vs
+
+instance (HasVec a, Arbitrary a) => Arbitrary (SmallVec a) where
+  arbitrary = do
+    rs <- choose (1,10)
+    vs <- vector rs
+    return . SmallVec . fromVec $ fromList vs
+
 sizedWeights :: Int -> Int -> Gen Weights
 sizedWeights rs cs = liftM (mkWeights . (rs >< cs)) $ vector (rs * cs)
 
