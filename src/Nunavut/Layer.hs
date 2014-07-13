@@ -4,6 +4,7 @@ module Nunavut.Layer(
   weights,
   activator,
   filterL,
+  propL,
   inSize,
   outSize
   ) where
@@ -44,3 +45,11 @@ instance HasInput Layer where
 
 instance HasOutput Layer where
   outSize = weights . inSize
+
+
+{--------------------------------------------------------------------------
+-                              Propogation                               -
+--------------------------------------------------------------------------}
+propL :: Layer -> Activation -> Either Error Activation
+propL = ifDimsMatch propLMatches
+  where propLMatches (Layer w a f) = (f ^. filterFunc) . elementwise (a ^. activatorFunc) . (w <>)
