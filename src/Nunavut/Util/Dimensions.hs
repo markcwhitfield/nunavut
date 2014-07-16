@@ -1,5 +1,4 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances #-}
 module Nunavut.Util.Dimensions where
 
 import Prelude hiding (concat)
@@ -21,6 +20,9 @@ class SizedOperator a where
 {--------------------------------------------------------------------------
 -                            Helper Functions                            -
 --------------------------------------------------------------------------}
+checkDims :: (SizedOperator a, SizedOperator b) => a -> b -> Either Error b
+checkDims = ifDimsMatch (\_ b -> b)
+
 dimMismatch :: (SizedOperator a, SizedOperator b) => a -> b -> Error
 dimMismatch a b = mkError $ concat [
                   "Dimension Mismatch: ",

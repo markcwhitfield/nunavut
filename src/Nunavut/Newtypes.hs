@@ -1,17 +1,22 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 module Nunavut.Newtypes (
   Activation,
   ErrorSignal,
+  Input,
   Weights,
   Jacobian,
   mkActiv,
   mkErrSig,
+  mkInput,
   mkWeights,
   mkJacob,
   unActiv,
   unErrSig,
+  unInput,
   unWeights,
   unJacob,
   l1Norm,
@@ -19,12 +24,15 @@ module Nunavut.Newtypes (
   infNorm,
   frobNorm,
   elementwise,
+  Activations,
   HasVec(..),
   HasMtx(..),
-  (<>)
+  (<>),
+  mul
   ) where
 
-import Control.Lens (to)
+import Control.Lens (to, Getter)
+import Data.List.NonEmpty (NonEmpty)
 import Numeric.LinearAlgebra (
   Matrix, Vector, dim, cols, rows, pnorm, NormType(..),
   mapVector)
@@ -39,10 +47,15 @@ newtype Activation = Activ { unActiv :: Vector Double }
   deriving (Show, Eq, Ord)
 newtype ErrorSignal = ErrSig { unErrSig :: Vector Double }
   deriving (Show, Eq, Ord)
+newtype Input = Input { unInput :: Vector Double }
+  deriving (Show, Eq, Ord)
+
 newtype Weights = Weights { unWeights :: Matrix Double }
   deriving (Show, Eq)
 newtype Jacobian = Jacob { unJacob :: Matrix Double }
   deriving (Show, Eq)
+
+type Activations = NonEmpty Activation
 
 data Norm = L1 | L2 | InfNorm | Frob
 
@@ -59,6 +72,8 @@ class HasMtx a where
   fromMtx :: Matrix Double -> a
 class Mul a b c | a b -> c where
   (<>) :: a -> b -> c
+  mul :: b -> Getter a c
+  mul b = to (<> b)
 
 
 {--------------------------------------------------------------------------
@@ -68,6 +83,9 @@ mkActiv :: Vector Double -> Activation
 mkActiv = Activ
 mkErrSig :: Vector Double -> ErrorSignal
 mkErrSig = ErrSig
+mkInput :: Vector Double -> Input
+mkInput = Input
+
 mkWeights :: Matrix Double -> Weights
 mkWeights = Weights
 mkJacob :: Matrix Double -> Jacobian
@@ -95,6 +113,10 @@ instance HasVec Activation where
 instance HasVec ErrorSignal where
   toVec = unErrSig
   fromVec = mkErrSig
+instance HasVec Input where
+  toVec = unInput
+  fromVec = mkInput
+
 instance HasMtx Weights where
   toMtx = unWeights
   fromMtx = mkWeights

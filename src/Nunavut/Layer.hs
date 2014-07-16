@@ -9,6 +9,7 @@ module Nunavut.Layer(
   outSize
   ) where
 
+import Control.Applicative ((<$>))
 import Control.Lens (makeLenses, (^.))
 import Data.List (intercalate)
 
@@ -26,6 +27,7 @@ data Layer = Layer {
              _filterL    :: Filter
              }
 makeLenses ''Layer
+
 {--------------------------------------------------------------------------
 -                               Instances                                -
 --------------------------------------------------------------------------}
@@ -43,11 +45,11 @@ instance Show Layer where
 instance SizedOperator Layer where
   inSize = weights . inSize
   outSize = weights . outSize
-
-
 {--------------------------------------------------------------------------
 -                              Propogation                               -
 --------------------------------------------------------------------------}
 propL :: Layer -> Activation -> Either Error Activation
-propL = ifDimsMatch propLMatches
-  where propLMatches (Layer w a f) = (f ^. filterFunc) . elementwise (a ^. activatorFunc) . (w <>)
+propL l a = filter' <$> elementwise activator' <$> (weights' <>) <$> checkDims l a
+  where filter'    = l ^. filterL . filterFunc
+        activator' = l ^. activator . activatorFunc
+        weights'   = l ^. weights
