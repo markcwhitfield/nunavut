@@ -4,13 +4,9 @@ module Nunavut.Layer(
   weights,
   activator,
   filterL,
-  propL,
-  inSize,
-  outSize
   ) where
 
-import Control.Applicative ((<$>))
-import Control.Lens (makeLenses, (^.))
+import Control.Lens (makeLenses)
 import Data.List (intercalate)
 
 import Nunavut.Activator
@@ -45,11 +41,3 @@ instance Show Layer where
 instance SizedOperator Layer where
   inSize = weights . inSize
   outSize = weights . outSize
-{--------------------------------------------------------------------------
--                              Propogation                               -
---------------------------------------------------------------------------}
-propL :: Layer -> Activation -> Either Error Activation
-propL l a = filter' <$> elementwise activator' <$> (weights' <>) <$> checkDims l a
-  where filter'    = l ^. filterL . filterFunc
-        activator' = l ^. activator . activatorFunc
-        weights'   = l ^. weights

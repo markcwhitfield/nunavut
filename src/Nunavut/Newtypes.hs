@@ -1,6 +1,4 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 module Nunavut.Newtypes (
@@ -9,16 +7,19 @@ module Nunavut.Newtypes (
   Input,
   Weights,
   Jacobian,
+  Update,
   mkActiv,
   mkErrSig,
   mkInput,
   mkWeights,
   mkJacob,
+  mkUpdate,
   unActiv,
   unErrSig,
   unInput,
   unWeights,
   unJacob,
+  unUpdate,
   l1Norm,
   l2Norm,
   infNorm,
@@ -28,10 +29,11 @@ module Nunavut.Newtypes (
   HasVec(..),
   HasMtx(..),
   (<>),
-  mul
+  trans,
+  outer,
   ) where
 
-import Control.Lens (to, Getter)
+import Control.Lens (to)
 import Data.List.NonEmpty (NonEmpty)
 import Numeric.LinearAlgebra (
   Matrix, Vector, dim, cols, rows, pnorm, NormType(..),
@@ -54,6 +56,8 @@ newtype Weights = Weights { unWeights :: Matrix Double }
   deriving (Show, Eq)
 newtype Jacobian = Jacob { unJacob :: Matrix Double }
   deriving (Show, Eq)
+newtype Update = Update { unUpdate :: Matrix Double }
+  deriving (Show, Eq)
 
 type Activations = NonEmpty Activation
 
@@ -72,8 +76,6 @@ class HasMtx a where
   fromMtx :: Matrix Double -> a
 class Mul a b c | a b -> c where
   (<>) :: a -> b -> c
-  mul :: b -> Getter a c
-  mul b = to (<> b)
 
 
 {--------------------------------------------------------------------------
@@ -90,6 +92,8 @@ mkWeights :: Matrix Double -> Weights
 mkWeights = Weights
 mkJacob :: Matrix Double -> Jacobian
 mkJacob = Jacob
+mkUpdate :: Matrix Double -> Update
+mkUpdate = Update
 
 
 {--------------------------------------------------------------------------
@@ -105,6 +109,10 @@ instance SizedOperator Jacobian where
 
 instance SizedOperator Activation where
   outSize = to $ dim . unActiv
+  inSize = outSize
+
+instance SizedOperator ErrorSignal where
+  outSize = to $ dim . unErrSig
   inSize = outSize
 
 instance HasVec Activation where
@@ -123,6 +131,9 @@ instance HasMtx Weights where
 instance HasMtx Jacobian where
   toMtx = unJacob
   fromMtx = mkJacob
+instance HasMtx Update where
+  toMtx = unUpdate
+  fromMtx = mkUpdate
 
 
 instance HasNorm Activation where
@@ -140,6 +151,15 @@ instance (HasVec a) => Mul a a Double where
 {--------------------------------------------------------------------------
 -                            Helper Functions                            -
 --------------------------------------------------------------------------}
+wrapM :: (HasMtx a) => (Matrix Double -> Matrix Double) -> a -> a
+wrapM f = fromMtx . f . toMtx
+
+trans :: (HasMtx a) => a -> a
+trans = wrapM LA.trans
+
+outer :: Activation -> ErrorSignal -> Update
+outer (Activ a) (ErrSig b) = mkUpdate (a `LA.outer` b)
+
 l1Norm :: (HasNorm a) => a -> Double
 l1Norm = pNorm L1
 

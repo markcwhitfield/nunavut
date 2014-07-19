@@ -10,7 +10,7 @@ module Nunavut.Filter (
 import Control.Lens (makeLenses, (^.))
 import Numeric.LinearAlgebra (diag, outer, ident, dim, maxElement)
 
-import Nunavut.Newtypes
+import Nunavut.Newtypes hiding (outer)
 
 {--------------------------------------------------------------------------
 -                                 Types                                  -
@@ -20,7 +20,7 @@ data FilterType = None | Softmax
 data Filter = Filter {
               _filterType :: FilterType,
               _filterFunc :: Activation -> Activation,
-              _filterDeriv :: Activation -> Jacobian
+              _filterDeriv :: ErrorSignal -> Jacobian
               }
 makeLenses ''Filter
 
@@ -35,7 +35,7 @@ instance Show Filter where
 -                            Helper Functions                            -
 --------------------------------------------------------------------------}
 noFilter :: Filter
-noFilter = Filter None id (mkJacob . ident . dim . unActiv)
+noFilter = Filter None id (mkJacob . ident . dim . unErrSig)
 
 softmax :: Filter
 softmax = Filter Softmax softmaxFunc softmaxDeriv
@@ -45,6 +45,7 @@ softmaxFunc v = elementwise (/ l1Norm exponentiated) exponentiated
   where exponentiated = elementwise (exp . (\e -> e - maxV)) v
         maxV = maxElement . unActiv $ v
 
-softmaxDeriv :: Activation -> Jacobian
+softmaxDeriv :: ErrorSignal -> Jacobian
 softmaxDeriv v = mkJacob $ diag s - (s `outer` s)
-  where s = unActiv . softmaxFunc $ v
+  where s = unActiv . softmaxFunc $ v'
+        v' = mkActiv . unErrSig $ v

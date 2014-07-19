@@ -23,6 +23,9 @@ class SizedOperator a where
 checkDims :: (SizedOperator a, SizedOperator b) => a -> b -> Either Error b
 checkDims = ifDimsMatch (\_ b -> b)
 
+checkDims' :: (SizedOperator a, SizedOperator b) => a -> b -> Either Error a
+checkDims' = ifDimsMatch const
+
 dimMismatch :: (SizedOperator a, SizedOperator b) => a -> b -> Error
 dimMismatch a b = mkError $ concat [
                   "Dimension Mismatch: ",
