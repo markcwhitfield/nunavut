@@ -2,13 +2,17 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Nunavut.Util.Arbitrary where
 
+import Control.Lens ((^.))
 import Control.Monad (liftM, liftM3)
+import Data.List.NonEmpty (NonEmpty(..), (<|))
 import Numeric.LinearAlgebra
 import Test.QuickCheck hiding ((><))
 
 import Nunavut.Activator
 import Nunavut.Filter
 import Nunavut.Layer
+import Nunavut.NeuralNet
+import Nunavut.NeuralNet.Internal
 import Nunavut.Newtypes
 import Nunavut.Util
 
@@ -33,43 +37,61 @@ instance (HasVec a, Arbitrary a) => Arbitrary (SmallVec a) where
     vs <- vector rs
     return . SmallVec . fromVec $ fromList vs
 
-sizedWeights :: Int -> Int -> Gen Weights
-sizedWeights rs cs = liftM (mkWeights . (rs >< cs)) $ vector (rs * cs)
+sizedFromMtx :: HasMtx a => Positive Int -> Positive Int -> Gen a
+sizedFromMtx (Positive rs) (Positive cs) = liftM (fromMtx . (rs >< cs)) $ vector (rs * cs)
 
-sizedLayer :: Int -> Int -> Gen Layer
-sizedLayer rs cs = liftM3 Layer (sizedWeights rs cs) arbitrary arbitrary
+sizedLayer :: Positive Int -> Positive Int -> Gen Layer
+sizedLayer rs cs = liftM3 Layer (sizedFromMtx rs cs) arbitrary arbitrary
 
-sizedActivation :: Int -> Gen Activation
-sizedActivation rs = liftM (mkActiv . fromList) $ vector rs
+sizedFromVec :: (HasVec a) => Positive Int -> Gen a
+sizedFromVec (Positive rs) = liftM (fromVec . fromList) $ vector rs
+
+sizedFFNet :: Positive Int -> Positive Int -> Gen FFNet
+sizedFFNet inp (Positive 1) = do
+  out <- arbitrary
+  layer <- sizedLayer out inp
+  return . FFNet $ (layer:|[])
+sizedFFNet inp (Positive n) = do
+  net@(FFNet ls) <- sizedFFNet inp (Positive n - 1)
+  rs <- arbitrary
+  layer <- sizedLayer rs (Positive $ net ^. outSize)
+  return . FFNet $ layer <| ls
 
 instance Arbitrary (MatchingDims Weights Activation) where
   arbitrary = do
-    (Positive cs) <- arbitrary
-    (Positive rs) <- arbitrary
-    wghts <- sizedWeights rs cs
-    activation <- sizedActivation cs
+    cs <- arbitrary
+    rs <- arbitrary
+    wghts <- sizedFromMtx rs cs
+    activation <- sizedFromVec cs 
     return . Matching wghts $ activation
+
+instance Arbitrary (MatchingDims FFNet Input) where
+  arbitrary = do
+    inp <- arbitrary
+    numLayers <- arbitrary
+    net <- sizedFFNet (Positive $ inp ^. outSize) numLayers
+    return . Matching net $ inp
+
 
 instance Arbitrary (MatchingDims Layer Activation) where
   arbitrary = do
     (Positive cs) <- arbitrary
     (Positive rs) <- arbitrary
     layer <- sizedLayer rs cs
-    activation <- sizedActivation cs
+    activation <- sizedFromVec cs
     return . Matching layer $ activation
 
 instance Arbitrary Weights where
   arbitrary = do
-    (Positive rs) <- arbitrary
-    (Positive cs) <- arbitrary
-    vs <- vector (rs * cs)
-    return . mkWeights $ (rs >< cs) vs
+    rs <- arbitrary
+    cs <- arbitrary
+    sizedFromMtx rs cs
 
 instance Arbitrary Activation where
-  arbitrary = do
-    (Positive rs) <- arbitrary
-    vs <- vector rs
-    return . mkActiv $ fromList vs
+  arbitrary = sizedFromVec =<< arbitrary
+
+instance Arbitrary ErrorSignal where
+  arbitrary = sizedFromVec =<< arbitrary
 
 instance CoArbitrary Activation where
   coarbitrary = variant . dim . unActiv
@@ -82,3 +104,12 @@ instance Arbitrary Activator where
 
 instance Arbitrary Layer where
   arbitrary = liftM3 Layer arbitrary arbitrary arbitrary
+
+instance Arbitrary FFNet where
+  arbitrary = do
+    inp <- arbitrary
+    len <- arbitrary
+    sizedFFNet inp len
+
+instance Arbitrary Input where
+  arbitrary = sizedFromVec =<< arbitrary

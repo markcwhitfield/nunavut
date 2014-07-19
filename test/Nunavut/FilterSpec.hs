@@ -27,7 +27,7 @@ spec = do
               in j ^. outSize == v ^. outSize && j ^. inSize == v ^. outSize
     it "returns the Jacobian of filterFunc at its input" $ property $
       \f (SmallVec v) -> let func = (f ^. filterFunc)
-                             j = toMtx $ (f ^. filterDeriv) v
+                             j = toMtx . (f ^. filterDeriv) . mkErrSig . unActiv $ v
                              numericalJ = toMtx $ diffJacob func v
                          in  (l2Norm . mkActiv . flatten $ j `sub` numericalJ) < eps
 

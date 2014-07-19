@@ -10,8 +10,16 @@ isTotal :: (Arbitrary a, Show a) => (a -> b) -> Spec
 isTotal f = it "is a total function" $ property $
                     \z -> f z `seq` True
 
+isTotal2 :: (Arbitrary a, Show a, Arbitrary b, Show b) => (a -> b -> c) -> Spec
+isTotal2 f = it "is a total function" $ property $
+                    \y z -> f y z `seq` True
+
+isTotal3 :: (Arbitrary a, Show a, Arbitrary b, Show b, Arbitrary c, Show c) => (a -> b -> c -> d) -> Spec
+isTotal3 f = it "is a total function" $ property $
+                    \x y z -> f x y z `seq` True
+
 eps :: Double
-eps = 0.001
+eps = 10 ** (-5)
 
 diff :: (Double -> Double) -> Double -> Double
 diff f x = (f (x + eps) - f x) / eps
