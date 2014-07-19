@@ -30,13 +30,16 @@ propL l a = filter' <$> elementwise activator' <$> (weights' <>) <$> checkDims l
         activator' = l ^. activator . activatorFunc
         weights'   = l ^. weights
 
+{--------------------------------------------------------------------------
+-                            Backpropogation                             -
+--------------------------------------------------------------------------}
 backpropogate :: FFNet -> Activations -> ErrorSignal -> Either Error [Update]
 backpropogate n as e = fmap snd . foldrM foldBackProp (e, []) $ activsAndLayers 
   where foldBackProp (a,l) (err,us) = second (: us) <$> backpropL l a err
         activsAndLayers = zip as . reverse $ n ^. layers
         
 backpropL :: Layer -> Activation -> ErrorSignal -> Either Error (ErrorSignal, Update)
-backpropL l a e = dWeights <$> dActivator <$> dFilter <$> checkDims' e l
+backpropL l a e = dWeights <$> dActivator <$> dFilter <$> (checkDims' e =<< checkDims l a)
   where dWeights = ((trans $ l ^. weights) <>) &&& outer a
         dActivator = elementwise (l ^. activator . activatorDeriv)
         dFilter e' = (l ^. filterL . filterDeriv $ e') <> e'

@@ -1,35 +1,27 @@
-{-# LANGUAGE TemplateHaskell #-}
-module Nunavut.NeuralNet where
+module Nunavut.NeuralNet (
+  FFNet,
+  oneLayer,
+  mkFFNet,
+  layers,
+  addLayer) where
+
+import Nunavut.NeuralNet.Internal
 
 import Data.List.NonEmpty (NonEmpty(..), (<|))
-import Control.Lens (makeLenses, over)
+import Control.Lens (over)
 
 import Nunavut.Layer
 import Nunavut.Util
 
 {--------------------------------------------------------------------------
--                                 Types                                  -
---------------------------------------------------------------------------}
-data FFNet = FFNet {
-             _layers :: NonEmpty Layer
-             }
-
-makeLenses ''FFNet
-
-{--------------------------------------------------------------------------
--                               Instances                                -
---------------------------------------------------------------------------}
-instance SizedOperator FFNet where
-  inSize = layers . _last . inSize
-  outSize = layers . _head . outSize
-
-
-{--------------------------------------------------------------------------
 -                              Constructors                              -
 --------------------------------------------------------------------------}
+oneLayer :: Layer -> FFNet
+oneLayer l = FFNet (l :| [])
+
 mkFFNet :: [Layer] -> Either Error FFNet
 mkFFNet [] = Left $ mkError "Cannot instantiate empty FFNet"
-mkFFNet (l:[]) = Right . FFNet $ l :| []
+mkFFNet (l:[]) = Right . oneLayer $ l
 mkFFNet (l:ls) = addLayer l =<< mkFFNet ls
 
 

@@ -115,6 +115,10 @@ instance SizedOperator ErrorSignal where
   outSize = to $ dim . unErrSig
   inSize = outSize
 
+instance SizedOperator Input where
+  outSize = to $ dim . unInput
+  inSize = outSize
+
 instance HasVec Activation where
   toVec = unActiv
   fromVec = mkActiv
