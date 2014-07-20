@@ -8,3 +8,4 @@ import Nunavut.Layer as X
 import Nunavut.NeuralNet as X
 import Nunavut.Newtypes as X
 import Nunavut.Util as X
+import Nunavut.Propogation as X

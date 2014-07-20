@@ -1,4 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
 module Nunavut.Layer(
   Layer(..),
   weights,
@@ -6,38 +5,15 @@ module Nunavut.Layer(
   filterL,
   ) where
 
-import Control.Lens (makeLenses)
-import Data.List (intercalate)
-
-import Nunavut.Activator
-import Nunavut.Filter
-import Nunavut.Newtypes
-import Nunavut.Util
+import Nunavut.Layer.Internal
 
 {--------------------------------------------------------------------------
--                         Types and Constructors                         -
+-                              Propogation                               -
 --------------------------------------------------------------------------}
-data Layer = Layer {
-             _weights   :: Weights,
-             _activator :: Activator,
-             _filterL    :: Filter
-             }
-makeLenses ''Layer
-
-{--------------------------------------------------------------------------
--                               Instances                                -
---------------------------------------------------------------------------}
-instance Show Layer where
-  show (Layer w a f) = concat [
-                       "Layer:\n",
-                       "\tWeights:\n\t\t",
-                       intercalate "\n\t\t" . lines . show $ w,
-                       "\n\n\tActivator:\n\t\t",
-                       show a,
-                       "\n\n\tFilter:\n\t\t",
-                       show f]
-
-
-instance SizedOperator Layer where
-  inSize = weights . inSize
-  outSize = weights . outSize
+{-
+backpropL :: Layer -> Signal -> ErrorSignal -> Either Error (ErrorSignal, Update)
+backpropL l a e = dWeights <$> dActivator <$> dFilter <$> (checkDims' e =<< checkDims l a)
+  where dWeights = ((trans $ l ^. weights) <>) &&& outer a
+        dActivator = elementwise (l ^. activator . activatorDeriv)
+        dFilter e' = (l ^. filterL . filterDeriv $ e') <> e'
+-}
