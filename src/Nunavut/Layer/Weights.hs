@@ -3,6 +3,9 @@ module Nunavut.Layer.Weights where
 import Control.Lens (to)
 import Control.Monad.Trans (lift)
 import Control.Monad.Trans.Either (hoistEither)
+import Control.Monad.Trans.Identity (runIdentityT)
+import Control.Monad.Writer (tell)
+import Data.Monoid (mempty)
 import Numeric.LinearAlgebra (Matrix, rows, cols)
 
 import Nunavut.Propogation
@@ -24,7 +27,11 @@ instance HasMtx Weights where
   fromMtx = mkWeights
 
 instance Propogate Weights where
-  unsafePropogate w = lift . return . (w <>)
+  unsafePropogate w sig = do
+    let withWeights = w <> sig
+    tell $ PData [withWeights] mempty mempty
+    return withWeights
+  
   propogate w sig = do
-    eSig <- hoistEither $ checkDims w sig
-    return $ w <> eSig
+    checkedSig <- hoistEither $ checkDims w sig
+    lift . runIdentityT $ unsafePropogate w checkedSig

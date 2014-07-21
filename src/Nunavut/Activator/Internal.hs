@@ -3,6 +3,7 @@ module Nunavut.Activator.Internal where
 
 import Control.Lens (makeLenses, (^.))
 import Control.Monad.Writer (tell)
+import Data.Monoid (mempty)
 
 import Nunavut.Newtypes
 import Nunavut.Propogation
@@ -27,6 +28,8 @@ instance Show Activator where
   show = show . (^. activatorType)
 instance Propogate Activator where
   unsafePropogate a sig = do
-    let activated = elementwise (a ^. activatorFunc) sig
-    tell [activated]
-    return activated
+    let activation = elementwise (a ^. activatorFunc) sig
+    tell $ PData mempty [activation] mempty
+    return activation
+
+  unsafeBackprop a sig = return . elementwise (a ^. activatorDeriv) $ sig

@@ -6,15 +6,12 @@ module Nunavut.Newtypes (
   Input,
   Label,
   Jacobian,
-  Update,
   mkInput,
   mkJacob,
-  mkUpdate,
   mkLabel,
   unInput,
   unLabel,
   unJacob,
-  unUpdate,
   l1Norm,
   l2Norm,
   infNorm,
@@ -44,9 +41,6 @@ newtype Label = Label { unLabel :: Vector Double }
 
 newtype Jacobian = Jacob { unJacob :: Matrix Double }
   deriving (Show, Eq)
-newtype Update = Update { unUpdate :: Matrix Double }
-  deriving (Show, Eq)
-
 data Norm = L1 | L2 | InfNorm | Frob
 
 {--------------------------------------------------------------------------
@@ -74,9 +68,6 @@ mkLabel = Label
 
 mkJacob :: Matrix Double -> Jacobian
 mkJacob = Jacob
-mkUpdate :: Matrix Double -> Update
-mkUpdate = Update
-
 
 {--------------------------------------------------------------------------
 -                               Instances                                -
@@ -103,10 +94,6 @@ instance HasVec Label where
 instance HasMtx Jacobian where
   toMtx = unJacob
   fromMtx = mkJacob
-instance HasMtx Update where
-  toMtx = unUpdate
-  fromMtx = mkUpdate
-
 
 instance (HasMtx a, HasVec b) => Mul a b b where
   a <> b = fromVec $ toMtx a LA.<> toVec b
