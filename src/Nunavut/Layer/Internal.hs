@@ -42,6 +42,9 @@ instance Propogate Layer where
   unsafePropogate l = across l unsafePropogate
   propogate l = across l propogate
 
+  unsafeBackprop l = acrossRev l unsafeBackprop
+  backprop l = acrossRev l backprop
+
 {--------------------------------------------------------------------------
 -                            Helper Functions                            -
 --------------------------------------------------------------------------}
@@ -52,4 +55,13 @@ across ::
   -> Signal
   -> m Signal
 across l f a = prop filterL =<< prop activator =<< prop weights a
+  where prop getter = views getter f l
+
+acrossRev ::
+  (Monad m)
+  => Layer
+  -> (forall a. Propogate a => a -> ErrorSignal -> m ErrorSignal)
+  -> ErrorSignal
+  -> m ErrorSignal
+acrossRev l f e = prop filterL e >>= prop activator >>= prop weights
   where prop getter = views getter f l

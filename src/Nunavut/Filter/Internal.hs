@@ -2,6 +2,7 @@
 module Nunavut.Filter.Internal where
 
 import Control.Lens (makeLenses, (^.))
+import Control.Monad.Reader (ask)
 import Control.Monad.Writer (tell)
 import Data.Monoid (mempty)
 
@@ -16,7 +17,7 @@ data FilterType = None | Softmax
 data Filter = Filter {
               _filterType :: FilterType,
               _filterFunc :: Signal -> Signal,
-              _filterDeriv :: ErrorSignal -> Jacobian
+              _filterDeriv :: Signal -> Jacobian
               }
 makeLenses ''Filter
 
@@ -29,3 +30,8 @@ instance Propogate Filter where
   unsafePropogate f sig = do
     tell $ PData mempty mempty [sig]
     return $ (f ^. filterFunc) sig
+
+  unsafeBackprop f err = do
+    datum <- ask
+    let jac = (f ^. filterDeriv) (datum ^. dPreFiltered)
+    return $ trans jac <> err

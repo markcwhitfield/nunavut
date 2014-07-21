@@ -1,6 +1,7 @@
 module Nunavut.Layer.Weights where
 
-import Control.Lens (to)
+import Control.Lens (to, (^.))
+import Control.Monad.Reader (ask)
 import Control.Monad.Trans (lift)
 import Control.Monad.Trans.Either (hoistEither)
 import Control.Monad.Trans.Identity (runIdentityT)
@@ -34,3 +35,12 @@ instance Propogate Weights where
   propogate w sig = do
     checkedSig <- hoistEither $ checkDims w sig
     lift . runIdentityT $ unsafePropogate w checkedSig
+
+  unsafeBackprop w err = do
+    datum <- ask
+    tell [(datum ^. dPreWeighted) >< err]
+    return $ trans w <> err
+
+  backprop w err = do
+    checkedErr <- hoistEither $ checkDims' err w
+    lift . runIdentityT $ unsafeBackprop w checkedErr

@@ -5,9 +5,10 @@ import Control.Lens (to, Lens', lens)
 import Control.Monad.Trans (lift)
 import Control.Monad.Trans.Identity (IdentityT, runIdentityT)
 import Control.Monad.Trans.Either (EitherT)
+import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Writer (Writer)
 import Data.Monoid (Monoid, mappend, mempty)
-import Numeric.LinearAlgebra (Vector, Matrix, dim)
+import Numeric.LinearAlgebra (Vector, Matrix, dim, zipVectorWith, outer)
 
 import Nunavut.Newtypes
 import Nunavut.Util
@@ -111,3 +112,11 @@ instance HasMtx Update where
   toMtx = unUpdate
   fromMtx = mkUpdate
 
+{--------------------------------------------------------------------------
+-                            Helper Functions                            -
+--------------------------------------------------------------------------}
+(.*) :: ErrorSignal -> Signal -> ErrorSignal
+(.*) (ErrSig err) (Sig sig) = fromVec $ zipVectorWith (*) err sig
+
+(><) :: Signal -> ErrorSignal -> Update
+(><) (Sig sig) (ErrSig err) = fromMtx $ sig `outer` err

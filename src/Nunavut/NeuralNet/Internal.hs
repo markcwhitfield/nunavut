@@ -31,3 +31,6 @@ instance SizedOperator FFNet where
 instance Propogate FFNet where
   unsafePropogate (FFNet ls) sig = foldrM unsafePropogate sig $ reverse ls
   propogate (FFNet ls) sig = foldrM propogate sig $ reverse ls
+
+  unsafeBackprop (FFNet ls) err = foldrM unsafeBackprop err ls
+  backprop (FFNet ls) err = foldrM backprop err ls

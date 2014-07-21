@@ -16,7 +16,7 @@ import Nunavut.Propogation
 -                            Helper Functions                            -
 --------------------------------------------------------------------------}
 noFilter :: Filter
-noFilter = Filter None id (mkJacob . ident . dim . unErrSig)
+noFilter = Filter None id (fromMtx . ident . dim . toVec)
 
 softmax :: Filter
 softmax = Filter Softmax softmaxFunc softmaxDeriv
@@ -26,7 +26,7 @@ softmaxFunc v = elementwise (/ l1Norm exponentiated) exponentiated
   where exponentiated = elementwise (exp . (\e -> e - maxV)) v
         maxV = maxElement . unSig $ v
 
-softmaxDeriv :: ErrorSignal -> Jacobian
-softmaxDeriv v = mkJacob $ diag s - (s `outer` s)
+softmaxDeriv :: Signal -> Jacobian
+softmaxDeriv v = fromMtx $ diag s - (s `outer` s)
   where s = unSig . softmaxFunc $ v'
-        v' = mkSig . unErrSig $ v
+        v' = mkSig . toVec $ v
