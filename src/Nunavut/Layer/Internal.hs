@@ -8,7 +8,6 @@ import Data.List (intercalate)
 import Nunavut.Activator
 import Nunavut.Filter
 import Nunavut.Layer.Weights
-import Nunavut.Newtypes
 import Nunavut.Propogation
 import Nunavut.Util
 
@@ -41,24 +40,16 @@ instance SizedOperator Layer where
 
 instance Propogate Layer where
   unsafePropogate l = across l unsafePropogate
-  propogate l = acrossM l propogate
+  propogate l = across l propogate
 
 {--------------------------------------------------------------------------
 -                            Helper Functions                            -
 --------------------------------------------------------------------------}
 across ::
-  Layer
-  -> (forall a. Propogate a => a -> Signal -> Signal)
-  -> Signal
-  -> Signal
-across l f = prop filterL . prop activator . prop weights
-  where prop getter = views getter f l
-
-acrossM ::
   (Monad m)
   => Layer
   -> (forall a. Propogate a => a -> Signal -> m Signal)
   -> Signal
   -> m Signal
-acrossM l f a = prop filterL =<< prop activator =<< prop weights a
+across l f a = prop filterL =<< prop activator =<< prop weights a
   where prop getter = views getter f l

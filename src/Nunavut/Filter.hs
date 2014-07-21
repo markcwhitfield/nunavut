@@ -9,7 +9,8 @@ module Nunavut.Filter (
 import Numeric.LinearAlgebra (diag, outer, ident, dim, maxElement)
 
 import Nunavut.Filter.Internal
-import Nunavut.Newtypes hiding (outer)
+import Nunavut.Newtypes
+import Nunavut.Propogation
 
 {--------------------------------------------------------------------------
 -                            Helper Functions                            -

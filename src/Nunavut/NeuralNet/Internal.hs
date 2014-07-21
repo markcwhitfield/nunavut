@@ -4,7 +4,7 @@ module Nunavut.NeuralNet.Internal where
 import Prelude hiding (foldr)
 
 import Control.Lens (makeLenses)
-import Data.Foldable (foldr, foldrM)
+import Data.Foldable (foldrM)
 import Data.List.NonEmpty (NonEmpty(..))
 
 import Nunavut.Layer
@@ -29,5 +29,5 @@ instance SizedOperator FFNet where
   inSize = layers . _last . inSize
   outSize = layers . _head . outSize
 instance Propogate FFNet where
-  unsafePropogate (FFNet ls) sig = foldr unsafePropogate sig ls
+  unsafePropogate (FFNet ls) sig = foldrM unsafePropogate sig ls
   propogate (FFNet ls) sig = foldrM propogate sig ls

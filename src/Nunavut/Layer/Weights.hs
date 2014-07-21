@@ -1,6 +1,8 @@
 module Nunavut.Layer.Weights where
 
 import Control.Lens (to)
+import Control.Monad.Trans (lift)
+import Control.Monad.Trans.Either (hoistEither)
 import Numeric.LinearAlgebra (Matrix, rows, cols)
 
 import Nunavut.Propogation
@@ -22,5 +24,7 @@ instance HasMtx Weights where
   fromMtx = mkWeights
 
 instance Propogate Weights where
-  unsafePropogate = (<>)
-  propogate w = fmap (w <>) . checkDims w 
+  unsafePropogate w = lift . return . (w <>)
+  propogate w sig = do
+    eSig <- hoistEither $ checkDims w sig
+    return $ w <> eSig

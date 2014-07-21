@@ -27,6 +27,7 @@ mkFFNet (l:ls) = addLayer l =<< mkFFNet ls
 {--------------------------------------------------------------------------
 -                              Propogation                               -
 --------------------------------------------------------------------------}
+{-
 predict :: FFNet -> Input -> Either Error Signal
 predict n = fmap head . propogate n
 
@@ -34,7 +35,7 @@ backpropN :: FFNet -> Signals -> ErrorSignal -> Either Error [Update]
 backpropN n as e = fmap snd . foldrM foldBackProp (e, []) $ activsAndLayers 
   where foldBackProp (a,l) (err,us) = second (: us) <$> backpropL l a err
         activsAndLayers = zip as . reverse $ n ^. layers
-        
+-}        
 {--------------------------------------------------------------------------
 -                            Helper Functions                            -
 --------------------------------------------------------------------------}

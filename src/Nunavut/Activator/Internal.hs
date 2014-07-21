@@ -2,6 +2,7 @@
 module Nunavut.Activator.Internal where
 
 import Control.Lens (makeLenses, (^.))
+import Control.Monad.Writer (tell)
 
 import Nunavut.Newtypes
 import Nunavut.Propogation
@@ -25,4 +26,7 @@ makeLenses ''Activator
 instance Show Activator where
   show = show . (^. activatorType)
 instance Propogate Activator where
-  unsafePropogate a = elementwise $ a ^. activatorFunc
+  unsafePropogate a sig = do
+    let activated = elementwise (a ^. activatorFunc) sig
+    tell [activated]
+    return activated

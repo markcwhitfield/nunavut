@@ -1,7 +1,7 @@
 name:                Nunavut
 version:             0.1.0.0
 stability:           alpha
-synopsis:            Yet Another Haskell Nerual Network Library
+synopsis:            Yet Another Haskell Neural Network Library
 
 author:              Mark Whitfield
 maintainer:          markcwhitfield@gmail.com
@@ -45,6 +45,9 @@ library
     text          >= 1.1,
     lens          >= 4.2,
     hmatrix       >= 0.16,
+    either        >= 4.3,
+    mtl           >= 2.2,
+    transformers  >= 0.4,
     semigroups    >= 0.15,
     base          == 4.7.*
 

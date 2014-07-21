@@ -2,6 +2,7 @@
 module Nunavut.Filter.Internal where
 
 import Control.Lens (makeLenses, (^.))
+import Control.Monad.Trans (lift)
 
 import Nunavut.Newtypes
 import Nunavut.Propogation
@@ -24,4 +25,4 @@ makeLenses ''Filter
 instance Show Filter where
   show = show . (^. filterType)
 instance Propogate Filter where
-  unsafePropogate n = n ^. filterFunc
+  unsafePropogate n = lift . return . (n ^. filterFunc)
