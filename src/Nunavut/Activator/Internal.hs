@@ -28,8 +28,7 @@ instance Show Activator where
   show = show . (^. activatorType)
 instance Propogate Activator where
   unsafePropogate a sig = do
-    let activation = elementwise (a ^. activatorFunc) sig
-    tell $ PData mempty [activation] mempty
-    return activation
+    tell $ PData mempty [sig] mempty
+    return $ elementwise (a ^. activatorFunc) sig
 
   unsafeBackprop a sig = return . elementwise (a ^. activatorDeriv) $ sig

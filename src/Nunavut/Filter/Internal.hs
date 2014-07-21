@@ -27,6 +27,5 @@ instance Show Filter where
   show = show . (^. filterType)
 instance Propogate Filter where
   unsafePropogate f sig = do
-    let withFilter = (f ^. filterFunc) sig
-    tell $ PData mempty mempty [withFilter]
-    return withFilter
+    tell $ PData mempty mempty [sig]
+    return $ (f ^. filterFunc) sig

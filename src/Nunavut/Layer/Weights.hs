@@ -28,9 +28,8 @@ instance HasMtx Weights where
 
 instance Propogate Weights where
   unsafePropogate w sig = do
-    let withWeights = w <> sig
-    tell $ PData [withWeights] mempty mempty
-    return withWeights
+    tell $ PData [sig] mempty mempty
+    return $ w <> sig
   
   propogate w sig = do
     checkedSig <- hoistEither $ checkDims w sig

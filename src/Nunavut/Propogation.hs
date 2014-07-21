@@ -28,10 +28,15 @@ class Propogate a where
 -                                 Types                                  -
 --------------------------------------------------------------------------}
 data PropData = PData {
-                _weighted  :: [Signal],
-                _activated :: [Signal],
-                _filtered  :: [Signal]
+                _preWeights  :: [Signal],
+                _preActivated :: [Signal],
+                _preFiltered  :: [Signal]
                 }
+data PropDatum = PDatum {
+                 _dPreWeighted  :: Signal,
+                 _dPreActivated :: Signal,
+                 _dPreFiltered  :: Signal
+                 }
 
 
 newtype Signal = Sig { unSig :: Vector Double }
@@ -45,19 +50,29 @@ newtype Update = Update { unUpdate :: Matrix Double }
 
 type Updates = [Update]
 type PropResult t = t (Writer PropData) Signal
-type BackpropResult t = t (Writer Updates) ErrorSignal
+type BackpropResult t = t (ReaderT PropDatum (Writer Updates)) ErrorSignal
 
 {--------------------------------------------------------------------------
 -                                 Lenses                                 -
 --------------------------------------------------------------------------}
-weighted :: Lens' PropData [Signal]
-weighted = lens _weighted (\p s -> p { _weighted = s })
+preWeights :: Lens' PropData [Signal]
+preWeights = lens _preWeights (\p s -> p { _preWeights = s })
 
-activated :: Lens' PropData [Signal]
-activated = lens _activated (\p s -> p { _activated = s })
+preActivated :: Lens' PropData [Signal]
+preActivated = lens _preActivated (\p s -> p { _preActivated = s })
 
-filtered :: Lens' PropData [Signal]
-filtered = lens _filtered (\p s -> p { _filtered = s })
+preFiltered :: Lens' PropData [Signal]
+preFiltered = lens _preFiltered (\p s -> p { _preFiltered = s })
+
+dPreWeighted :: Lens' PropDatum Signal
+dPreWeighted = lens _dPreWeighted (\p s -> p { _dPreWeighted = s })
+
+dPreActivated :: Lens' PropDatum Signal
+dPreActivated = lens _dPreActivated (\p s -> p { _dPreActivated = s })
+
+dPreFiltered :: Lens' PropDatum Signal
+dPreFiltered = lens _dPreFiltered (\p s -> p { _dPreFiltered = s })
+
 
 {--------------------------------------------------------------------------
 -                              Constructors                              -
@@ -69,7 +84,6 @@ mkErrSig = ErrSig
 
 mkUpdate :: Matrix Double -> Update
 mkUpdate = Update
-
 
 {--------------------------------------------------------------------------
 -                               Instances                                -
