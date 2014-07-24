@@ -6,6 +6,7 @@ module Nunavut.Newtypes (
   Input,
   Label,
   Jacobian,
+  Norm,
   mkInput,
   mkJacob,
   mkLabel,
@@ -25,10 +26,11 @@ module Nunavut.Newtypes (
 
 import Control.Lens (to)
 import Numeric.LinearAlgebra (
-  Matrix, Vector, dim, cols, rows, NormType(..),
+  Matrix, Vector, dim, cols, rows,
   mapVector, pnorm)
 import qualified Numeric.LinearAlgebra as LA
 
+import Nunavut.Newtypes.Internal
 import Nunavut.Util.Dimensions
 
 {--------------------------------------------------------------------------
@@ -41,7 +43,6 @@ newtype Label = Label { unLabel :: Vector Double }
 
 newtype Jacobian = Jacob { unJacob :: Matrix Double }
   deriving (Show, Eq)
-data Norm = L1 | L2 | InfNorm | Frob
 
 {--------------------------------------------------------------------------
 -                                Classes                                 -
@@ -125,10 +126,3 @@ frobNorm = pNorm Frob
 
 elementwise :: (HasVec a) => (Double -> Double) -> a -> a
 elementwise f = fromVec . mapVector f . toVec
-
-
-toNormType :: Norm -> NormType
-toNormType InfNorm = Infinity
-toNormType L1 = PNorm1
-toNormType L2 = PNorm2
-toNormType Frob = Frobenius

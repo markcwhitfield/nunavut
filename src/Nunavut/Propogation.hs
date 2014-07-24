@@ -2,9 +2,6 @@
 module Nunavut.Propogation where
 
 import Control.Lens (to, Lens', lens)
-import Control.Monad.Trans (lift)
-import Control.Monad.Trans.Identity (IdentityT, runIdentityT)
-import Control.Monad.Trans.Either (EitherT)
 import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Writer (Writer)
 import Data.Monoid (Monoid, mappend, mempty)
@@ -12,18 +9,6 @@ import Numeric.LinearAlgebra (Vector, Matrix, dim, zipVectorWith, outer)
 
 import Nunavut.Newtypes
 import Nunavut.Util
-
-{--------------------------------------------------------------------------
--                              Typeclasses                               -
---------------------------------------------------------------------------}
-class Propogate a where
-  unsafePropogate :: a -> Signal -> PropResult IdentityT
-  propogate :: a -> Signal -> PropResult (EitherT Error)
-  propogate a = lift . runIdentityT . unsafePropogate a
-
-  unsafeBackprop :: a -> ErrorSignal -> BackpropResult IdentityT
-  backprop       :: a -> ErrorSignal -> BackpropResult (EitherT Error)
-  backprop a = lift . runIdentityT . unsafeBackprop a
 
 {--------------------------------------------------------------------------
 -                                 Types                                  -

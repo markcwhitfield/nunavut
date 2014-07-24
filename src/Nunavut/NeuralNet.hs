@@ -1,4 +1,8 @@
 module Nunavut.NeuralNet (
+  unsafePropogate,
+  unsafeBackprop,
+  propogate,
+  backprop,
   FFNet,
   oneLayer,
   mkFFNet,
@@ -6,10 +10,16 @@ module Nunavut.NeuralNet (
   addLayer) where 
 import Nunavut.NeuralNet.Internal
 
-import Data.List.NonEmpty (NonEmpty(..), (<|))
+import Prelude hiding (reverse)
+
+import Data.Foldable (foldrM)
+import Data.List.NonEmpty (NonEmpty(..), reverse, (<|))
 import Control.Lens (over)
+import Control.Monad.Trans.Either (EitherT)
+import Control.Monad.Trans.Identity (IdentityT)
 
 import Nunavut.Layer
+import Nunavut.Propogation
 import Nunavut.Util
 
 {--------------------------------------------------------------------------
@@ -27,6 +37,15 @@ mkFFNet (l:ls) = addLayer l =<< mkFFNet ls
 {--------------------------------------------------------------------------
 -                              Propogation                               -
 --------------------------------------------------------------------------}
+unsafePropogate :: FFNet -> Signal -> PropResult IdentityT
+unsafePropogate (FFNet ls) sig = foldrM unsafePropL sig $ reverse ls
+propogate :: FFNet -> Signal -> PropResult (EitherT Error)
+propogate (FFNet ls) sig = foldrM propL sig $ reverse ls
+
+unsafeBackprop :: FFNet -> ErrorSignal -> BackpropResult IdentityT
+unsafeBackprop (FFNet ls) err = foldrM unsafeBackpropL err ls
+backprop :: FFNet -> ErrorSignal -> BackpropResult (EitherT Error)
+backprop (FFNet ls) err = foldrM backpropL err ls
 {-
 predict :: FFNet -> Input -> Either Error Signal
 predict n = fmap head . propogate n

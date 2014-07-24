@@ -2,13 +2,12 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Nunavut.Layer.Internal where
 
-import Control.Lens (makeLenses, views)
+import Control.Lens (makeLenses)
 import Data.List (intercalate)
 
 import Nunavut.Activator
 import Nunavut.Filter
 import Nunavut.Layer.Weights
-import Nunavut.Propogation
 import Nunavut.Util
 
 {--------------------------------------------------------------------------
@@ -37,31 +36,3 @@ instance Show Layer where
 instance SizedOperator Layer where
   inSize = weights . inSize
   outSize = weights . outSize
-
-instance Propogate Layer where
-  unsafePropogate l = across l unsafePropogate
-  propogate l = across l propogate
-
-  unsafeBackprop l = acrossRev l unsafeBackprop
-  backprop l = acrossRev l backprop
-
-{--------------------------------------------------------------------------
--                            Helper Functions                            -
---------------------------------------------------------------------------}
-across ::
-  (Monad m)
-  => Layer
-  -> (forall a. Propogate a => a -> Signal -> m Signal)
-  -> Signal
-  -> m Signal
-across l f a = prop filterL =<< prop activator =<< prop weights a
-  where prop getter = views getter f l
-
-acrossRev ::
-  (Monad m)
-  => Layer
-  -> (forall a. Propogate a => a -> ErrorSignal -> m ErrorSignal)
-  -> ErrorSignal
-  -> m ErrorSignal
-acrossRev l f e = prop filterL e >>= prop activator >>= prop weights
-  where prop getter = views getter f l

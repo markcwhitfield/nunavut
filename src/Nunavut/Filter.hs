@@ -1,4 +1,7 @@
+{-# LANGUAGE FlexibleContexts #-}
 module Nunavut.Filter (
+  propF,
+  backpropF,
   filterFunc,
   filterDeriv,
   softmax,
@@ -6,11 +9,34 @@ module Nunavut.Filter (
   Filter
   ) where
 
+import Control.Lens ((^.))
+import Control.Monad.Reader (ask, MonadReader)
+import Control.Monad.Writer (tell, MonadWriter)
+import Data.Monoid (mempty)
 import Numeric.LinearAlgebra (diag, outer, ident, dim, maxElement)
 
 import Nunavut.Filter.Internal
 import Nunavut.Newtypes
 import Nunavut.Propogation
+
+{--------------------------------------------------------------------------
+-                              Propogation                               -
+--------------------------------------------------------------------------}
+propF :: (Monad m, MonadWriter PropData m)
+  => Filter -> Signal -> m Signal
+propF f sig = do
+  tell $ PData mempty mempty [sig]
+  return $ (f ^. filterFunc) sig
+
+backpropF :: (
+  Monad m,
+  MonadWriter Updates m,
+  MonadReader PropDatum m)
+  => Filter -> ErrorSignal -> m ErrorSignal
+backpropF f err = do
+  datum <- ask
+  let jac = (f ^. filterDeriv) (datum ^. dPreFiltered)
+  return $ trans jac <> err
 
 {--------------------------------------------------------------------------
 -                            Helper Functions                            -
