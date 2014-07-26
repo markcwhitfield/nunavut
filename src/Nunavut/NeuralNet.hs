@@ -53,7 +53,7 @@ predict n = fmap head . propogate n
 backpropN :: FFNet -> Signals -> ErrorSignal -> Either Error [Update]
 backpropN n as e = fmap snd . foldrM foldBackProp (e, []) $ activsAndLayers 
   where foldBackProp (a,l) (err,us) = second (: us) <$> backpropL l a err
-        activsAndLayers = zip as . reverse $ n ^. layers
+       activsAndLayers = zip as . reverse $ n ^. layers
 -}        
 {--------------------------------------------------------------------------
 -                            Helper Functions                            -

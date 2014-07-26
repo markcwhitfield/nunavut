@@ -7,7 +7,6 @@ module Nunavut.Layer(
   Layer(..),
   weights,
   activator,
-  filterL,
   ) where
 
 import Control.Lens (views)
@@ -19,7 +18,6 @@ import Control.Monad.Writer (MonadWriter)
 import Nunavut.Layer.Internal
 
 import Nunavut.Activator
-import Nunavut.Filter
 import Nunavut.Layer.Weights
 import Nunavut.Propogation
 import Nunavut.Util
@@ -48,9 +46,8 @@ across ::
   -> (Weights -> Signal -> m Signal)
   -> Signal
   -> m Signal
-across l f a = runFilter =<< runActivator =<< runWeights a
-  where runFilter = views filterL propF l
-        runActivator = views activator propA l
+across l f a = runActivator =<< runWeights a
+  where runActivator = views activator propA l
         runWeights = views weights f l
 
 acrossRev ::
@@ -59,9 +56,8 @@ acrossRev ::
   -> (Weights -> ErrorSignal -> m ErrorSignal)
   -> ErrorSignal
   -> m ErrorSignal
-acrossRev l f a = runFilter a >>= runActivator >>= runWeights
-  where runFilter = views filterL backpropF l
-        runActivator = views activator backpropA l
+acrossRev l f a = runActivator a >>= runWeights
+  where runActivator = views activator backpropA l
         runWeights = views weights f l
 {-
 backpropL :: Layer -> Signal -> ErrorSignal -> Either Error (ErrorSignal, Update)

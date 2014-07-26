@@ -4,10 +4,11 @@ module Nunavut.Activator (
   backpropA,
   activatorFunc,
   activatorDeriv,
+  softmax,
   logistic,
+  tanhActivator,
   relu,
   linear,
-  tanhActivator,
   Activator
   ) where
 
@@ -15,6 +16,7 @@ import Control.Lens ((^.))
 import Control.Monad.Reader (ask, MonadReader)
 import Control.Monad.Writer (tell, MonadWriter)
 import Data.Monoid (mempty)
+import Numeric.LinearAlgebra (diag, outer, maxElement)
 
 import Nunavut.Activator.Internal
 import Nunavut.Newtypes
@@ -25,34 +27,37 @@ import Nunavut.Propogation
 --------------------------------------------------------------------------}
 propA :: (Monad m, MonadWriter PropData m)
   => Activator -> Signal -> m Signal
-propA a sig = do
-  tell $ PData mempty [sig] mempty
-  return $ elementwise (a ^. activatorFunc) sig
+propA f sig = do
+  tell $ PData mempty mempty [sig]
+  return . withBias $ (f ^. activatorFunc) sig
 
 backpropA :: (
   Monad m,
   MonadWriter Updates m,
   MonadReader PropDatum m)
   => Activator -> ErrorSignal -> m ErrorSignal
-backpropA a err = do
+backpropA f err = do
   datum <- ask
-  let deriv = elementwise (a ^. activatorDeriv) (datum ^. dPreActivated)
-  return $ err .* deriv
+  let jac = (f ^. activatorDeriv) (datum ^. dPreFiltered)
+  return . withoutBias $ trans jac <> err
 
 {--------------------------------------------------------------------------
 -                            Helper Functions                            -
 --------------------------------------------------------------------------}
+diagActivator :: ActivatorType -> (Double -> Double) -> (Double -> Double) -> Activator
+diagActivator t f d = Activator t (elementwise f) (fromMtx . diag . toVec . elementwise d)
+
 logistic :: Activator
-logistic = Activator Logistic logisticFunc logisticDeriv
+logistic = diagActivator Logistic logisticFunc logisticDeriv
 
 relu :: Activator
-relu = Activator RectifiedLinear reluFunc reluDeriv
+relu = diagActivator RectifiedLinear reluFunc reluDeriv
 
 linear :: Activator
-linear = Activator Linear id $ const 1
+linear = diagActivator Linear id $ const 1
 
 tanhActivator :: Activator
-tanhActivator = Activator Tanh tanh ((1 -) . (** 2) . tanh)
+tanhActivator = diagActivator Tanh tanh ((1 -) . (** 2) . tanh)
 
 logisticFunc :: Double -> Double
 logisticFunc z = 1 / (1 + exp (-z))
@@ -68,3 +73,16 @@ reluDeriv :: Double -> Double
 reluDeriv z
   | z <= 0    = 0
   | otherwise = 1
+
+softmax :: Activator
+softmax = Activator Softmax softmaxFunc softmaxDeriv
+
+softmaxFunc :: Signal -> Signal
+softmaxFunc v = elementwise (/ l1Norm exponentiated) exponentiated
+  where exponentiated = elementwise (exp . (\e -> e - maxV)) v
+        maxV = maxElement . unSig $ v
+
+softmaxDeriv :: Signal -> Jacobian
+softmaxDeriv v = fromMtx $ diag s - (s `outer` s)
+  where s = unSig . softmaxFunc $ v'
+        v' = mkSig . toVec $ v
