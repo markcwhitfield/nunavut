@@ -26,7 +26,7 @@ propF :: (Monad m, MonadWriter PropData m)
   => Filter -> Signal -> m Signal
 propF f sig = do
   tell $ PData mempty mempty [sig]
-  return $ (f ^. filterFunc) sig
+  return . withBias $ (f ^. filterFunc) sig
 
 backpropF :: (
   Monad m,
@@ -36,7 +36,7 @@ backpropF :: (
 backpropF f err = do
   datum <- ask
   let jac = (f ^. filterDeriv) (datum ^. dPreFiltered)
-  return $ trans jac <> err
+  return . withoutBias $ trans jac <> err
 
 {--------------------------------------------------------------------------
 -                            Helper Functions                            -

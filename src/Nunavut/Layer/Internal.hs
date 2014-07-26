@@ -2,7 +2,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Nunavut.Layer.Internal where
 
-import Control.Lens (makeLenses)
+import Control.Lens (makeLenses, to, views)
 import Data.List (intercalate)
 
 import Nunavut.Activator
@@ -35,4 +35,4 @@ instance Show Layer where
 
 instance SizedOperator Layer where
   inSize = weights . inSize
-  outSize = weights . outSize
+  outSize = to $ views (weights . outSize) (+ 1)

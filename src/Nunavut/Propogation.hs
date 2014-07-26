@@ -1,11 +1,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Nunavut.Propogation where
-
 import Control.Lens (to, Lens', lens)
 import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Writer (Writer)
 import Data.Monoid (Monoid, mappend, mempty)
-import Numeric.LinearAlgebra (Vector, Matrix, dim, zipVectorWith, outer)
+import Numeric.LinearAlgebra (Vector, Matrix, dim, zipVectorWith, outer,
+  fromList, toList)
 
 import Nunavut.Newtypes
 import Nunavut.Util
@@ -100,6 +100,15 @@ instance HasMtx Update where
 {--------------------------------------------------------------------------
 -                            Helper Functions                            -
 --------------------------------------------------------------------------}
+onElements :: HasVec a => ([Double] -> [Double]) -> a -> a
+onElements f = fromVec . fromList . f . toList . toVec
+
+withBias :: Signal -> Signal
+withBias = onElements (1 :)
+
+withoutBias :: ErrorSignal -> ErrorSignal
+withoutBias = onElements tail
+
 (.*) :: ErrorSignal -> Signal -> ErrorSignal
 (.*) (ErrSig err) (Sig sig) = fromVec $ zipVectorWith (*) err sig
 
