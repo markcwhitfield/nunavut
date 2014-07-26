@@ -11,9 +11,12 @@ import Test.QuickCheck hiding ((><))
 import Nunavut.Activator
 import Nunavut.Filter
 import Nunavut.Layer
+import Nunavut.Layer.Weights
 import Nunavut.NeuralNet
 import Nunavut.NeuralNet.Internal
 import Nunavut.Newtypes
+import Nunavut.Newtypes.Internal
+import Nunavut.Propogation hiding ((><))
 import Nunavut.Util
 
 data (SizedOperator a, SizedOperator b) => MatchingDims a b = Matching a b
@@ -52,12 +55,12 @@ sizedFFNet inp (Positive 1) = do
   layer <- sizedLayer out inp
   return . FFNet $ (layer:|[])
 sizedFFNet inp (Positive n) = do
-  net@(FFNet ls) <- sizedFFNet inp (Positive n - 1)
+  net@(FFNet ls) <- sizedFFNet inp (Positive $ n - 1)
   rs <- arbitrary
   layer <- sizedLayer rs (Positive $ net ^. outSize)
   return . FFNet $ layer <| ls
 
-instance Arbitrary (MatchingDims Weights Activation) where
+instance Arbitrary (MatchingDims Weights Signal) where
   arbitrary = do
     cs <- arbitrary
     rs <- arbitrary
@@ -73,28 +76,38 @@ instance Arbitrary (MatchingDims FFNet Input) where
     return . Matching net $ inp
 
 
-instance Arbitrary (MatchingDims Layer Activation) where
+instance Arbitrary (MatchingDims Layer Signal) where
   arbitrary = do
-    (Positive cs) <- arbitrary
-    (Positive rs) <- arbitrary
+    cs <- arbitrary
+    rs <- arbitrary
     layer <- sizedLayer rs cs
     activation <- sizedFromVec cs
     return . Matching layer $ activation
 
-instance Arbitrary Weights where
-  arbitrary = do
-    rs <- arbitrary
-    cs <- arbitrary
-    sizedFromMtx rs cs
+arbMtxNewtype :: (HasMtx a) => Gen a
+arbMtxNewtype = do
+  rs <- arbitrary
+  cs <- arbitrary
+  sizedFromMtx rs cs
 
-instance Arbitrary Activation where
+
+instance Arbitrary Weights where
+  arbitrary = arbMtxNewtype
+
+instance Arbitrary Jacobian where
+  arbitrary = arbMtxNewtype
+
+instance Arbitrary Signal where
   arbitrary = sizedFromVec =<< arbitrary
 
 instance Arbitrary ErrorSignal where
   arbitrary = sizedFromVec =<< arbitrary
 
-instance CoArbitrary Activation where
-  coarbitrary = variant . dim . unActiv
+instance Arbitrary Label where
+  arbitrary = sizedFromVec =<< arbitrary
+
+instance CoArbitrary Signal where
+  coarbitrary = variant . dim . unSig
 
 instance Arbitrary Filter where
   arbitrary = elements [softmax, noFilter]
@@ -113,3 +126,9 @@ instance Arbitrary FFNet where
 
 instance Arbitrary Input where
   arbitrary = sizedFromVec =<< arbitrary
+
+instance Arbitrary PropData where
+  arbitrary = liftM3 PData arbitrary arbitrary arbitrary
+
+instance Arbitrary Norm where
+  arbitrary = elements [L1, L2, Frob, InfNorm]

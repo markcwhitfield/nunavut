@@ -17,12 +17,12 @@ data PropData = PData {
                 _preWeights  :: [Signal],
                 _preActivated :: [Signal],
                 _preFiltered  :: [Signal]
-                }
+                } deriving (Show, Eq)
 data PropDatum = PDatum {
                  _dPreWeighted  :: Signal,
                  _dPreActivated :: Signal,
                  _dPreFiltered  :: Signal
-                 }
+                 } deriving (Show, Eq)
 
 
 newtype Signal = Sig { unSig :: Vector Double }

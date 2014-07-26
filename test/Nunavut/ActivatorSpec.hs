@@ -12,15 +12,13 @@ spec :: Spec
 spec = do
   describe "Activator" $ do
     describe "activatorFunc" $ do
-      it "is always a total function" $ property $
-        \a z -> (a ^. activatorFunc) z `seq` True
+      isTotal2 (\a z -> (a ^. activatorFunc) z)
       it "is always monotonically increasing" $ property $
         \a z z' -> z > z' ==>
           (a ^. activatorFunc) z >= (a ^. activatorFunc) z'
 
     describe "activatorDeriv" $ do
-      it "is always a total function" $ property $
-        \a z -> (a ^. activatorDeriv) z `seq` True
+      isTotal2 (\a z -> (a ^. activatorDeriv) z)
       it "is the derivative of the activatorFunc" $ property $
         \a z -> abs z > eps ==> diff (a ^. activatorFunc) z - (a ^. activatorDeriv) z < eps
 

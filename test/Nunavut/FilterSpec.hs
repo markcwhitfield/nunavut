@@ -14,22 +14,20 @@ import Nunavut.Util.TestUtils
 spec :: Spec
 spec = do
   describe "filterFunc" $ do
-    it "is always a total function" $ property $
-      \f v -> (f ^. filterFunc) v `seq` True
+    isTotal2 (\f v -> f ^. filterFunc $ v)
     it "never changes the dimensions of its input" $ property $
       \f v -> (f ^. filterFunc) v ^. inSize == v ^. inSize
 
   describe "filterDeriv" $ do
-    it "is always a total function" $ property $
-      \f v -> (f ^. filterDeriv) v `seq` True
+    isTotal2 (\f v -> (f ^. filterDeriv) v)
     it "returns a square matrix with the dimension of its input" $ property $
       \f v -> let j = (f ^. filterDeriv) v
               in j ^. outSize == v ^. outSize && j ^. inSize == v ^. outSize
     it "returns the Jacobian of filterFunc at its input" $ property $
       \f (SmallVec v) -> let func = (f ^. filterFunc)
-                             j = toMtx . (f ^. filterDeriv) . mkErrSig . unActiv $ v
+                             j = toMtx . (f ^. filterDeriv) . fromVec . toVec $ v
                              numericalJ = toMtx $ diffJacob func v
-                         in  (l2Norm . mkActiv . flatten $ j `sub` numericalJ) < eps
+                         in  (l2Norm . mkInput . flatten $ j `sub` numericalJ) < eps
 
   describe "softmaxFunc" $
     it "always returns a vector of L1 == 1" $ property $
