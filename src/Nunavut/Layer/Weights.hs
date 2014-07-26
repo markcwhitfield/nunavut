@@ -46,7 +46,8 @@ propW w sig = do
 unsafeBackpropW :: Weights -> ErrorSignal -> BackpropResult IdentityT
 unsafeBackpropW w err = do
   datum <- ask
-  tell [(datum ^. dPreWeighted) >< err]
+  let mulRate = mtxElementwise (* datum ^. config . learningRate)
+  tell [mulRate $ (datum ^. dPreWeighted) >< err]
   return $ trans w <> err
 
 backpropW :: Weights -> ErrorSignal -> BackpropResult (EitherT Error)

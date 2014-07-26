@@ -18,6 +18,7 @@ module Nunavut.Newtypes (
   infNorm,
   frobNorm,
   elementwise,
+  mtxElementwise,
   HasVec(..),
   HasMtx(..),
   (<>),
@@ -27,7 +28,7 @@ module Nunavut.Newtypes (
 import Control.Lens (to)
 import Numeric.LinearAlgebra (
   Matrix, Vector, dim, cols, rows,
-  mapVector, pnorm)
+  mapVector, pnorm, mapMatrix)
 import qualified Numeric.LinearAlgebra as LA
 
 import Nunavut.Newtypes.Internal
@@ -106,6 +107,9 @@ instance (HasVec a) => Mul a a Double where
 {--------------------------------------------------------------------------
 -                            Helper Functions                            -
 --------------------------------------------------------------------------}
+mtxElementwise :: HasMtx a => (Double -> Double) -> a -> a
+mtxElementwise f = wrapM (mapMatrix f)
+
 wrapM :: (HasMtx a) => (Matrix Double -> Matrix Double) -> a -> a
 wrapM f = fromMtx . f . toMtx
 

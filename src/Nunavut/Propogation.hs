@@ -13,12 +13,16 @@ import Nunavut.Util
 {--------------------------------------------------------------------------
 -                                 Types                                  -
 --------------------------------------------------------------------------}
+data PropConfig = PConfig { 
+                  _learningRate :: Double
+                  } deriving (Eq, Show)
 data PropData = PData {
-                _preWeights  :: [Signal],
+                _preWeights   :: [Signal],
                 _preActivated :: [Signal],
                 _preFiltered  :: [Signal]
                 } deriving (Show, Eq)
 data PropDatum = PDatum {
+                 _config       :: PropConfig,
                  _dPreWeighted  :: Signal,
                  _dPreActivated :: Signal,
                  _dPreFiltered  :: Signal
@@ -41,6 +45,9 @@ type BackpropResult t = t (ReaderT PropDatum (Writer Updates)) ErrorSignal
 {--------------------------------------------------------------------------
 -                                 Lenses                                 -
 --------------------------------------------------------------------------}
+learningRate :: Lens' PropConfig Double
+learningRate = lens _learningRate (\c r -> c { _learningRate = r })
+
 preWeights :: Lens' PropData [Signal]
 preWeights = lens _preWeights (\p s -> p { _preWeights = s })
 
@@ -49,6 +56,9 @@ preActivated = lens _preActivated (\p s -> p { _preActivated = s })
 
 preFiltered :: Lens' PropData [Signal]
 preFiltered = lens _preFiltered (\p s -> p { _preFiltered = s })
+
+config :: Lens' PropDatum PropConfig
+config = lens _config (\p c -> p { _config = c })
 
 dPreWeighted :: Lens' PropDatum Signal
 dPreWeighted = lens _dPreWeighted (\p s -> p { _dPreWeighted = s })
