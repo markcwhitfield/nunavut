@@ -1,12 +1,11 @@
 module Nunavut.Layer.Weights where
 
 import Control.Lens (to, (^.))
-import Control.Monad.Reader (ask)
+import Control.Monad.RWS (modify, tell, ask)
 import Control.Monad.Trans (lift)
 import Control.Monad.Trans.Either (EitherT, hoistEither)
 import Control.Monad.Trans.Identity (IdentityT, runIdentityT)
-import Control.Monad.Writer (tell)
-import Data.Monoid (mempty)
+import Data.Monoid (mempty, mappend)
 import Numeric.LinearAlgebra (Matrix, rows, cols)
 
 import Nunavut.Propogation
@@ -47,7 +46,7 @@ unsafeBackpropW :: Weights -> ErrorSignal -> BackpropResult IdentityT
 unsafeBackpropW w err = do
   datum <- ask
   let mulRate = mtxElementwise (* datum ^. config . learningRate)
-  tell [mulRate $ (datum ^. dPreWeighted) >< err]
+  modify (`mappend` [mulRate $ (datum ^. dPreWeighted) >< err])
   return $ trans w <> err
 
 backpropW :: Weights -> ErrorSignal -> BackpropResult (EitherT Error)

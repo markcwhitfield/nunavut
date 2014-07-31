@@ -1,8 +1,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Nunavut.Propogation where
+
 import Control.Lens (to, Lens', lens)
-import Control.Monad.Trans.Reader (ReaderT)
-import Control.Monad.Writer (Writer)
+import Control.Monad.RWS (RWS)
 import Data.Monoid (Monoid, mappend, mempty)
 import Numeric.LinearAlgebra (Vector, Matrix, dim, zipVectorWith, outer,
   fromList, toList)
@@ -38,9 +38,9 @@ newtype Update = Update { unUpdate :: Matrix Double }
   deriving (Show, Eq)
 
 
-type Updates = [Update]
-type PropResult t = t (Writer PropData) Signal
-type BackpropResult t = t (ReaderT PropDatum (Writer Updates)) ErrorSignal
+newtype Updates = Updates [Update]
+type PropResult t = t (RWS () PropData ()) Signal
+type BackpropResult t = t (RWS PropDatum Updates [Update]) ErrorSignal
 
 {--------------------------------------------------------------------------
 -                                 Lenses                                 -
@@ -88,6 +88,13 @@ instance Monoid PropData where
   mempty = PData mempty mempty mempty
   mappend (PData w1 a1 f1) (PData w2 a2 f2) =
     PData (w1 `mappend` w2) (a1 `mappend` a2) (f1 `mappend` f2)
+instance Monoid Updates where
+  mempty = Updates []
+  (Updates (u1:u1s)) `mappend` (Updates (u2:u2s)) = Updates $ u3 : (u1s `mappend` u2s)
+    where u3 = fromMtx $ toMtx u1 + toMtx u2
+  (Updates []) `mappend` u2s = u2s
+  u1s `mappend` (Updates []) = u1s
+            
 
 instance SizedOperator Signal where
   outSize = to $ dim . unSig
