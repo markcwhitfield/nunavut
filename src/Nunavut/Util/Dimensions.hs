@@ -27,7 +27,7 @@ checkDims' :: (SizedOperator a, SizedOperator b) => a -> b -> Either Error a
 checkDims' = ifDimsMatch const
 
 dimMismatch :: (SizedOperator a, SizedOperator b) => a -> b -> Error
-dimMismatch a b = mkError $ concat [
+dimMismatch a b = mkError . concat $ [
                   "Dimension Mismatch: ",
                   "Output size ", pack . show $ a ^. outSize,
                   "Does not match input size ", pack . show $ b ^. inSize] 

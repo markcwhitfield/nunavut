@@ -4,26 +4,30 @@ module Nunavut.NeuralNet (
   unsafeBackprop,
   propogate,
   backprop,
+  predict,
   FFNet,
   oneLayer,
   mkFFNet,
   layers,
+  updateWeights,
   addLayer) where 
 import Nunavut.NeuralNet.Internal
 
-import Prelude hiding (reverse)
+import Prelude hiding (reverse, concat)
 
 import Data.Foldable (foldrM)
-import Data.List.NonEmpty (NonEmpty(..), reverse, (<|))
+import Data.List.NonEmpty (NonEmpty(..), reverse, (<|), fromList, toList)
 import Data.Monoid (mempty)
+import Data.Text.Lazy (pack, concat)
 import Control.Lens (over)
-import Control.Monad.RWS (get, tell, put)
+import Control.Monad.RWS (get, tell, put, evalRWS)
 import Control.Monad.State (MonadState)
-import Control.Monad.Trans.Either (EitherT)
+import Control.Monad.Trans.Either (EitherT, runEitherT)
 import Control.Monad.Trans.Identity (IdentityT)
 import Control.Monad.Writer (MonadWriter)
 
 import Nunavut.Layer
+import Nunavut.Newtypes
 import Nunavut.Propogation
 import Nunavut.Util
 
@@ -52,15 +56,8 @@ unsafeBackprop = foldrMWithUpdates unsafeBackpropL
 backprop :: FFNet -> ErrorSignal -> BackpropResult (EitherT Error)
 backprop = foldrMWithUpdates backpropL
 
-{-
-predict :: FFNet -> Input -> Either Error Signal
-predict n = fmap head . propogate n
-
-backpropN :: FFNet -> Signals -> ErrorSignal -> Either Error [Update]
-backpropN n as e = fmap snd . foldrM foldBackProp (e, []) $ activsAndLayers 
-  where foldBackProp (a,l) (err,us) = second (: us) <$> backpropL l a err
-       activsAndLayers = zip as . reverse $ n ^. layers
--}        
+predict :: PropConfig -> FFNet -> Signal -> Either Error Signal
+predict p n = fst . (\m -> evalRWS m p ()) . runEitherT . propogate n
 
 {--------------------------------------------------------------------------
 -                            Helper Functions                            -
@@ -78,7 +75,16 @@ foldrMWithUpdates f (FFNet ls) err = do
   put mempty
   return result
 
-
 addLayer :: Layer -> FFNet -> Either Error FFNet
 addLayer = ifDimsMatch doAdd
   where doAdd l = over layers (l <|)
+
+updateWeights :: FFNet -> Updates -> Either Error FFNet
+updateWeights (FFNet lls) (Updates uus) = go lls uus
+  where go (l :| []) (Update u : []) = Right . oneLayer $ updateWeight l u
+        go (l :| ls) (Update u : us) = addLayer (updateWeight l u) =<< go (fromList ls) us
+        go _ _ = Left . mkError . concat $ [
+                    "Dimension Mismatch: ",
+                    "FFNet length ", pack . show . length . toList $ lls,
+                    "Does not match updates length ", pack . show . length $ uus]
+        updateWeight l u = over weights (wrapM (+ u)) l

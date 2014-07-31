@@ -14,7 +14,8 @@ import Nunavut.Util
 -                                 Types                                  -
 --------------------------------------------------------------------------}
 data PropConfig = PConfig { 
-                  _learningRate :: Double
+                  _learningRate :: Double,
+                  _batchSize    :: Int
                   } deriving (Eq, Show)
 data PropData = PData {
                 _preWeights   :: [Signal],
@@ -38,8 +39,8 @@ newtype Update = Update { unUpdate :: Matrix Double }
   deriving (Show, Eq)
 
 
-newtype Updates = Updates [Update]
-type PropResult t = t (RWS () PropData ()) Signal
+newtype Updates = Updates { unUpdates :: [Update] }
+type PropResult t = t (RWS PropConfig PropData ()) Signal
 type BackpropResult t = t (RWS PropDatum Updates [Update]) ErrorSignal
 
 {--------------------------------------------------------------------------
@@ -47,6 +48,9 @@ type BackpropResult t = t (RWS PropDatum Updates [Update]) ErrorSignal
 --------------------------------------------------------------------------}
 learningRate :: Lens' PropConfig Double
 learningRate = lens _learningRate (\c r -> c { _learningRate = r })
+
+batchSize :: Lens' PropConfig Int
+batchSize = lens _batchSize (\c r -> c { _batchSize = r })
 
 preWeights :: Lens' PropData [Signal]
 preWeights = lens _preWeights (\p s -> p { _preWeights = s })

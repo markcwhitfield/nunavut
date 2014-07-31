@@ -21,6 +21,7 @@ module Nunavut.Newtypes (
   mtxElementwise,
   HasVec(..),
   HasMtx(..),
+  wrapM,
   (<>),
   trans,
   ) where
