@@ -12,9 +12,8 @@ module Nunavut.Activator (
   Activator
   ) where
 
-import Control.Lens ((^.))
-import Control.Monad.Reader (ask, MonadReader)
-import Control.Monad.Writer (tell, MonadWriter)
+import Control.Lens ((^.), (%=), _2)
+import Control.Monad.RWS (MonadState, MonadWriter, get, tell)
 import Data.Monoid (mempty)
 import Numeric.LinearAlgebra (diag, outer, maxElement)
 
@@ -28,17 +27,18 @@ import Nunavut.Propogation
 propA :: (Monad m, MonadWriter PropData m)
   => Activator -> Signal -> m Signal
 propA f sig = do
-  tell $ PData mempty mempty [sig]
+  tell $ PData mempty [sig]
   return . withBias $ (f ^. activatorFunc) sig
 
 backpropA :: (
   Monad m,
   MonadWriter Updates m,
-  MonadReader PropDatum m)
+  MonadState (a, PropData) m)
   => Activator -> ErrorSignal -> m ErrorSignal
 backpropA f err = do
-  datum <- ask
-  let jac = (f ^. activatorDeriv) (datum ^. dPreFiltered)
+  (_, pData) <- get
+  let jac = (f ^. activatorDeriv) (head $ pData ^. preActivated)
+  _2 . preActivated %= tail
   return . withoutBias $ trans jac <> err
 
 {--------------------------------------------------------------------------

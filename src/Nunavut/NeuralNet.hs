@@ -19,8 +19,8 @@ import Data.Foldable (foldrM)
 import Data.List.NonEmpty (NonEmpty(..), reverse, (<|), fromList, toList)
 import Data.Monoid (mempty)
 import Data.Text.Lazy (pack, concat)
-import Control.Lens (over)
-import Control.Monad.RWS (get, tell, put, evalRWS)
+import Control.Lens (over, (.=), _1)
+import Control.Monad.RWS (get, tell, evalRWS)
 import Control.Monad.State (MonadState)
 import Control.Monad.Trans.Either (EitherT, runEitherT)
 import Control.Monad.Trans.Identity (IdentityT)
@@ -65,14 +65,14 @@ predict p n = fst . (\m -> evalRWS m p ()) . runEitherT . propogate n
 foldrMWithUpdates :: (
   Monad m ,
   MonadWriter Updates m,
-  MonadState [Update] m) =>
+  MonadState ([Update], PropData) m) =>
   (Layer -> ErrorSignal -> m ErrorSignal)
   -> FFNet -> ErrorSignal -> m ErrorSignal
 foldrMWithUpdates f (FFNet ls) err = do
   result <- foldrM f err ls
-  updates <- get
+  (updates, _) <- get
   tell $ Updates updates
-  put mempty
+  _1 .= mempty
   return result
 
 addLayer :: Layer -> FFNet -> Either Error FFNet

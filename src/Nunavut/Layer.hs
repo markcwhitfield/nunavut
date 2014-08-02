@@ -10,10 +10,9 @@ module Nunavut.Layer(
   ) where
 
 import Control.Lens (views)
-import Control.Monad.Reader (MonadReader)
+import Control.Monad.RWS (MonadWriter, MonadState)
 import Control.Monad.Trans.Either (EitherT)
 import Control.Monad.Trans.Identity (IdentityT)
-import Control.Monad.Writer (MonadWriter)
 
 import Nunavut.Layer.Internal
 
@@ -51,7 +50,7 @@ across l f a = runActivator =<< runWeights a
         runWeights = views weights f l
 
 acrossRev ::
-  (Monad m, MonadWriter Updates m, MonadReader PropDatum m)
+  (Monad m, MonadWriter Updates m, MonadState (a, PropDatum) m)
   => Layer
   -> (Weights -> ErrorSignal -> m ErrorSignal)
   -> ErrorSignal

@@ -19,16 +19,8 @@ data PropConfig = PConfig {
                   } deriving (Eq, Show)
 data PropData = PData {
                 _preWeights   :: [Signal],
-                _preActivated :: [Signal],
-                _preFiltered  :: [Signal]
+                _preActivated :: [Signal]
                 } deriving (Show, Eq)
-data PropDatum = PDatum {
-                 _config       :: PropConfig,
-                 _dPreWeighted  :: Signal,
-                 _dPreActivated :: Signal,
-                 _dPreFiltered  :: Signal
-                 } deriving (Show, Eq)
-
 
 newtype Signal = Sig { unSig :: Vector Double }
   deriving (Show, Eq, Ord, Num)
@@ -41,7 +33,7 @@ newtype Update = Update { unUpdate :: Matrix Double }
 
 newtype Updates = Updates { unUpdates :: [Update] }
 type PropResult t = t (RWS PropConfig PropData ()) Signal
-type BackpropResult t = t (RWS PropDatum Updates [Update]) ErrorSignal
+type BackpropResult t = t (RWS PropConfig Updates ([Update], PropData)) ErrorSignal
 
 {--------------------------------------------------------------------------
 -                                 Lenses                                 -
@@ -57,21 +49,6 @@ preWeights = lens _preWeights (\p s -> p { _preWeights = s })
 
 preActivated :: Lens' PropData [Signal]
 preActivated = lens _preActivated (\p s -> p { _preActivated = s })
-
-preFiltered :: Lens' PropData [Signal]
-preFiltered = lens _preFiltered (\p s -> p { _preFiltered = s })
-
-config :: Lens' PropDatum PropConfig
-config = lens _config (\p c -> p { _config = c })
-
-dPreWeighted :: Lens' PropDatum Signal
-dPreWeighted = lens _dPreWeighted (\p s -> p { _dPreWeighted = s })
-
-dPreActivated :: Lens' PropDatum Signal
-dPreActivated = lens _dPreActivated (\p s -> p { _dPreActivated = s })
-
-dPreFiltered :: Lens' PropDatum Signal
-dPreFiltered = lens _dPreFiltered (\p s -> p { _dPreFiltered = s })
 
 
 {--------------------------------------------------------------------------
@@ -89,9 +66,9 @@ mkUpdate = Update
 -                               Instances                                -
 --------------------------------------------------------------------------}
 instance Monoid PropData where
-  mempty = PData mempty mempty mempty
-  mappend (PData w1 a1 f1) (PData w2 a2 f2) =
-    PData (w1 `mappend` w2) (a1 `mappend` a2) (f1 `mappend` f2)
+  mempty = PData mempty mempty
+  mappend (PData w1 a1) (PData w2 a2) =
+    PData (w1 `mappend` w2) (a1 `mappend` a2)
 instance Monoid Updates where
   mempty = Updates []
   (Updates (u1:u1s)) `mappend` (Updates (u2:u2s)) = Updates $ u3 : (u1s `mappend` u2s)

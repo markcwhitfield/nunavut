@@ -1,7 +1,7 @@
 module Nunavut.Layer.Weights where
 
-import Control.Lens (to, (^.))
-import Control.Monad.RWS (modify, tell, ask)
+import Control.Lens (to, (^.), _1, _2, (%=))
+import Control.Monad.RWS (tell, get, ask)
 import Control.Monad.Trans (lift)
 import Control.Monad.Trans.Either (EitherT, hoistEither)
 import Control.Monad.Trans.Identity (IdentityT, runIdentityT)
@@ -34,7 +34,7 @@ instance HasMtx Weights where
 --------------------------------------------------------------------------}
 unsafePropW :: Weights -> Signal -> PropResult IdentityT
 unsafePropW w sig = do
-  tell $ PData [sig] mempty mempty
+  tell $ PData [sig] mempty
   return $ w <> sig
 
 propW :: Weights -> Signal -> PropResult (EitherT Error)
@@ -44,9 +44,11 @@ propW w sig = do
 
 unsafeBackpropW :: Weights -> ErrorSignal -> BackpropResult IdentityT
 unsafeBackpropW w err = do
-  datum <- ask
-  let mulRate = mtxElementwise (* datum ^. config . learningRate)
-  modify (`mappend` [mulRate $ (datum ^. dPreWeighted) >< err])
+  conf <- ask
+  (_, pData) <- get
+  let mulRate = mtxElementwise (* conf  ^. learningRate)
+  _1 %= (`mappend` [mulRate $ head (pData ^. preWeights) >< err])
+  _2 . preWeights %= tail
   return $ trans w <> err
 
 backpropW :: Weights -> ErrorSignal -> BackpropResult (EitherT Error)
