@@ -2,8 +2,9 @@
 module Nunavut.Activator.Internal where
 
 import Control.Lens (makeLenses, (^.))
-import Nunavut.Newtypes
-import Nunavut.Propogation
+
+import Nunavut.Newtypes (Jacobian)
+import Nunavut.Signals (Signal)
 
 {--------------------------------------------------------------------------
 -                                 Types                                  -

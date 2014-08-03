@@ -20,6 +20,7 @@ import Numeric.LinearAlgebra (diag, outer, maxElement)
 import Nunavut.Activator.Internal
 import Nunavut.Newtypes
 import Nunavut.Propogation
+import Nunavut.Signals (Signal, ErrorSignal)
 
 {--------------------------------------------------------------------------
 -                              Propogation                               -
@@ -80,9 +81,9 @@ softmax = Activator Softmax softmaxFunc softmaxDeriv
 softmaxFunc :: Signal -> Signal
 softmaxFunc v = elementwise (/ l1Norm exponentiated) exponentiated
   where exponentiated = elementwise (exp . (\e -> e - maxV)) v
-        maxV = maxElement . unSig $ v
+        maxV = maxElement . toVec $ v
 
 softmaxDeriv :: Signal -> Jacobian
 softmaxDeriv v = fromMtx $ diag s - (s `outer` s)
-  where s = unSig . softmaxFunc $ v'
-        v' = mkSig . toVec $ v
+  where s = toVec . softmaxFunc $ v'
+        v' = fromVec . toVec $ v

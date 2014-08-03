@@ -4,10 +4,11 @@ module Nunavut.NeuralNet.Internal where
 import Prelude hiding (reverse)
 
 import Control.Lens (makeLenses)
-import Data.List.NonEmpty (NonEmpty)
+import Data.List (intercalate)
+import Data.List.NonEmpty (NonEmpty, toList)
 
-import Nunavut.Layer
-import Nunavut.Util
+import Nunavut.Layer (Layer)
+import Nunavut.Util (SizedOperator(..), _last, _head)
 
 {--------------------------------------------------------------------------
 -                                 Types                                  -
@@ -22,7 +23,7 @@ makeLenses ''FFNet
 -                               Instances                                -
 --------------------------------------------------------------------------}
 instance Show FFNet where
-  show (FFNet ls) = show ls
+  show (FFNet ls) = intercalate "\n" . toList $ fmap show ls
 instance SizedOperator FFNet where
   inSize = layers . _last . inSize
   outSize = layers . _head . outSize

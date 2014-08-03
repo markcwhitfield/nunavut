@@ -8,9 +8,10 @@ import Data.Monoid (mempty, mappend)
 import Numeric.LinearAlgebra (Matrix, rows, cols, randomVector, reshape, RandDist(..), scale)
 import System.Random (randomIO)
 
-import Nunavut.Propogation
-import Nunavut.Newtypes
-import Nunavut.Util
+import Nunavut.Propogation (BackpropResult, PropResult, PropData(..), learningRate, preWeights, (><))
+import Nunavut.Newtypes (HasMtx(..), (<>), mtxElementwise, trans)
+import Nunavut.Signals (Signal, ErrorSignal)
+import Nunavut.Util (SizedOperator(..), Error, checkDims, checkDims')
 
 newtype Weights = Weights { unWeights :: Matrix Double }
   deriving (Show, Eq)

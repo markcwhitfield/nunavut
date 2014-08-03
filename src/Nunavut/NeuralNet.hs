@@ -26,11 +26,13 @@ import Data.List.Split (chunksOf)
 import Data.Monoid (mempty)
 import Data.Text.Lazy (pack, concat)
 
-
-import Nunavut.Layer
-import Nunavut.Newtypes
-import Nunavut.Propogation
-import Nunavut.Util
+import Nunavut.Activator (Activator)
+import Nunavut.ErrorFunction (getErrSig)
+import Nunavut.Layer (Layer, initLayer, propL, backpropL, unsafePropL, unsafeBackpropL, weights)
+import Nunavut.Newtypes (Input, HasVec(..), Label, wrapM) 
+import Nunavut.Propogation (PropResult, BackpropResult, Update(..), Updates(..), withBias, withoutBias, PropConfig(..), batchSize, errFunc)
+import Nunavut.Signals (Signal, ErrorSignal)
+import Nunavut.Util (Error, mkError, ifDimsMatch)
 
 {--------------------------------------------------------------------------
 -                              Constructors                              -

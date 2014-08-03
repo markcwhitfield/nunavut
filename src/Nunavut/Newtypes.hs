@@ -23,13 +23,14 @@ module Nunavut.Newtypes (
   HasMtx(..),
   wrapM,
   (<>),
+  addConst,
   trans,
   ) where
 
 import Control.Lens (to)
 import Numeric.LinearAlgebra (
   Matrix, Vector, dim, cols, rows,
-  mapVector, pnorm, mapMatrix)
+  mapVector, pnorm, mapMatrix, addConstant)
 import qualified Numeric.LinearAlgebra as LA
 
 import Nunavut.Newtypes.Internal
@@ -131,3 +132,6 @@ frobNorm = pNorm Frob
 
 elementwise :: (HasVec a) => (Double -> Double) -> a -> a
 elementwise f = fromVec . mapVector f . toVec
+
+addConst :: (HasVec a) => Double -> a -> a
+addConst a = fromVec . addConstant a . toVec

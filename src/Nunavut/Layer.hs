@@ -10,16 +10,19 @@ module Nunavut.Layer(
   activator,
   ) where
 
+import Control.Applicative ((<$>))
 import Control.Lens (views)
 import Control.Monad.Identity (Identity)
 import Control.Monad.RWS (MonadWriter, MonadState)
 
-import Nunavut.Layer.Internal
+import Nunavut.Layer.Internal (Layer(..), activator, weights)
+import Nunavut.Layer.Weights (Weights, propW, backpropW, unsafePropW, unsafeBackpropW, initWeights)
 
-import Nunavut.Activator
-import Nunavut.Layer.Weights
-import Nunavut.Propogation
-import Nunavut.Util
+
+import Nunavut.Activator (Activator, propA, backpropA)
+import Nunavut.Propogation  (PropResult, BackpropResult, PropData, Updates)
+import Nunavut.Signals (Signal, ErrorSignal)
+import Nunavut.Util (Error)
 
 {--------------------------------------------------------------------------
 -                              Constructor                               -
