@@ -1,50 +1,65 @@
 module Nunavut.ActivatorSpec where
 
 import Control.Lens ((^.))
+import Control.Monad.Writer (runWriter)
+import Control.Monad.Trans.RWS (runRWS)
+import Numeric.LinearAlgebra (flatten, sub, minElement, maxElement, prodElements)
 import Test.Hspec
 import Test.QuickCheck
 
 import Nunavut.Activator
-import Nunavut.Util.Arbitrary ()
+import Nunavut.Newtypes
+import Nunavut.Propogation
+import Nunavut.Util.Arbitrary
 import Nunavut.Util.TestUtils
 
 spec :: Spec
 spec = do
-  describe "Activator" $ do
-    describe "activatorFunc" $ do
-      isTotal2 (\a z -> (a ^. activatorFunc) z)
-      it "is always monotonically increasing" $ property $
-        \a z z' -> z > z' ==>
-          (a ^. activatorFunc) z >= (a ^. activatorFunc) z'
+  describe "propA" $
+    isTotal2 (\a s -> runWriter $ propA a s)
 
-    describe "activatorDeriv" $ do
-      isTotal2 (\a z -> (a ^. activatorDeriv) z)
-      it "is the derivative of the activatorFunc" $ property $
-        \a z -> abs z > eps ==> diff (a ^. activatorFunc) z - (a ^. activatorDeriv) z < eps
+  describe "backpropA" $
+    isTotal3 (\a e datum -> runRWS (backpropA a e) () ([], PData [] datum))
 
-  describe "logisticFunc" $ do
-    let logisticFunc = logistic ^. activatorFunc
-    it "has a codomain of [0,1]" $ property $
-      \z -> logisticFunc z >= 0 && logisticFunc z <= 1
-  describe "logisticDeriv" $ do
-    let logisticDeriv = logistic ^. activatorDeriv
-    it "has a codomain of [0,0.25]" $ property $
-      \z -> logisticDeriv z >= 0 && logisticDeriv z <= 0.25
+  describe "activatorFunc" $ do
+    isTotal2 (\a z -> (a ^. activatorFunc) z)
 
-  describe "reluFunc" $ do
-    let reluFunc = relu ^. activatorFunc
-    it "has a codomain of [0,inf)" $ property $
-      \z -> reluFunc z >= 0
-  describe "reluDeriv" $ do
-    let reluDeriv = relu ^. activatorDeriv
-    it "has a codomain of {0,1}" $ property $
-      \z -> reluDeriv z == 0 || reluDeriv z == 1
+    describe "logisticFunc" $ do
+      let logisticFunc = logistic ^. activatorFunc
+      it "has a codomain of [0,1]" $ property $
+        \z -> logisticFunc z >= addConst (-eps) 0 && logisticFunc z <= addConst eps 1
 
-  describe "tanhFunc" $ do
-    let tanhFunc = tanhActivator ^. activatorFunc
-    it "has a codomain of [-1,1]" $ property $
-      \z -> tanhFunc z >= -1 && tanhFunc z <= 1
-  describe "tanhDeriv" $ do
-    let tanhDeriv = tanhActivator ^. activatorDeriv
-    it "has a codomain of [0,1]" $ property $
-      \z -> tanhDeriv z >= 0 && tanhDeriv z <= 1
+    describe "reluFunc" $ do
+      let reluFunc = relu ^. activatorFunc
+      it "has a codomain of [0,inf)" $ property $
+        \z -> reluFunc z >= addConst (-eps) 0
+
+    describe "tanhFunc" $ do
+      let tanhFunc = tanhActivator ^. activatorFunc
+      it "has a codomain of [-1,1]" $ property $
+        \z -> tanhFunc z >= addConst (-eps) (-1) && tanhFunc z <= addConst eps 1
+
+  describe "activatorDeriv" $ do
+    isTotal2 (\a z -> (a ^. activatorDeriv) z)
+    it "is the derivative of the activatorFunc" $ property $
+      \f (SmallVec v) ->
+        let func = (f ^. activatorFunc)
+            j = toMtx . (f ^. activatorDeriv) . fromVec . toVec $ v
+            numericalJ = toMtx $ diffJacob func v
+        in  prodElements (toVec v) /= 0 ==> -- reLU nondifferentiable along axes
+              (l2Norm . mkInput . flatten $ j `sub` numericalJ) < eps
+
+    describe "logisticDeriv" $ do
+      let logisticDeriv = logistic ^. activatorDeriv
+      it "has a codomain of [0,0.25]" $ property $
+        \z -> (\x -> minElement x >= -eps && maxElement x <= 0.25 + eps) . toMtx . logisticDeriv $ z
+
+    describe "reluDeriv" $ do
+      let reluDeriv = relu ^. activatorDeriv
+      it "has a codomain of {0,1}" $ property $
+        \z -> (\x -> minElement x `elem` [0,1] && maxElement x `elem` [0,1]) . toMtx . reluDeriv $ z
+
+    describe "tanhDeriv" $ do
+      let tanhDeriv = tanhActivator ^. activatorDeriv
+      it "has a codomain of [0,1]" $ property $
+        \z -> (\x -> minElement x >= 0 && maxElement x <= 1) . toMtx . tanhDeriv $ z
