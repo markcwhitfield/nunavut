@@ -1,10 +1,9 @@
 module Nunavut.Layer.Weights where
 
 import Control.Lens (to, (^.), _1, _2, (%=))
-import Control.Monad.RWS (tell, get, ask)
+import Control.Monad.Trans.RWS (tell, get, ask, mapRWST)
 import Control.Monad.Trans (lift)
-import Control.Monad.Trans.Either (EitherT, hoistEither)
-import Control.Monad.Trans.Identity (IdentityT, runIdentityT)
+import Control.Monad.Identity (Identity, runIdentity)
 import Data.Monoid (mempty, mappend)
 import Numeric.LinearAlgebra (Matrix, rows, cols)
 
@@ -32,17 +31,17 @@ instance HasMtx Weights where
 {--------------------------------------------------------------------------
 -                              Propogation                               -
 --------------------------------------------------------------------------}
-unsafePropW :: Weights -> Signal -> PropResult IdentityT
+unsafePropW :: Weights -> Signal -> PropResult Identity
 unsafePropW w sig = do
   tell $ PData [sig] mempty
   return $ w <> sig
 
-propW :: Weights -> Signal -> PropResult (EitherT Error)
+propW :: Weights -> Signal -> PropResult (Either Error)
 propW w sig = do
-  checkedSig <- hoistEither $ checkDims w sig
-  lift . runIdentityT $ unsafePropW w checkedSig
+  checkedSig <- lift $ checkDims w sig
+  mapRWST (return . runIdentity) . unsafePropW w $ checkedSig
 
-unsafeBackpropW :: Weights -> ErrorSignal -> BackpropResult IdentityT
+unsafeBackpropW :: Weights -> ErrorSignal -> BackpropResult Identity
 unsafeBackpropW w err = do
   conf <- ask
   (_, pData) <- get
@@ -51,7 +50,10 @@ unsafeBackpropW w err = do
   _2 . preWeights %= tail
   return $ trans w <> err
 
-backpropW :: Weights -> ErrorSignal -> BackpropResult (EitherT Error)
+backpropW :: Weights -> ErrorSignal -> BackpropResult (Either Error)
 backpropW w err = do
-  checkedErr <- hoistEither $ checkDims' err w
-  lift . runIdentityT $ unsafeBackpropW w checkedErr
+   checkedErr <- lift $ checkDims' err w
+   mapRWST (return . runIdentity) . unsafeBackpropW w $ checkedErr
+
+shape :: Weights -> (Int, Int)
+shape (Weights w) = (rows w, cols w)

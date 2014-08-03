@@ -5,6 +5,7 @@ module Nunavut.NeuralNet (
   propogate,
   backprop,
   predict,
+  train,
   FFNet,
   oneLayer,
   mkFFNet,
@@ -15,16 +16,16 @@ import Nunavut.NeuralNet.Internal
 
 import Prelude hiding (reverse, concat)
 
+import Control.Applicative ((<$>), (<*>))
+import Control.Lens (over, (.=), _1, (^.))
+import Control.Monad.Trans.RWS (get, tell, evalRWST)
+import Control.Monad.Identity (Identity)
 import Data.Foldable (foldrM)
 import Data.List.NonEmpty (NonEmpty(..), reverse, (<|), fromList, toList)
+import Data.List.Split (chunksOf)
 import Data.Monoid (mempty)
 import Data.Text.Lazy (pack, concat)
-import Control.Lens (over, (.=), _1)
-import Control.Monad.RWS (get, tell, evalRWS)
-import Control.Monad.State (MonadState)
-import Control.Monad.Trans.Either (EitherT, runEitherT)
-import Control.Monad.Trans.Identity (IdentityT)
-import Control.Monad.Writer (MonadWriter)
+
 
 import Nunavut.Layer
 import Nunavut.Newtypes
@@ -46,30 +47,41 @@ mkFFNet (l:ls) = addLayer l =<< mkFFNet ls
 {--------------------------------------------------------------------------
 -                              Propogation                               -
 --------------------------------------------------------------------------}
-unsafePropogate :: FFNet -> Signal -> PropResult IdentityT
-unsafePropogate (FFNet ls) sig = foldrM unsafePropL sig $ reverse ls
-propogate :: FFNet -> Signal -> PropResult (EitherT Error)
-propogate (FFNet ls) sig = foldrM propL sig $ reverse ls
+unsafePropogate :: FFNet -> Signal -> PropResult Identity
+unsafePropogate (FFNet ls) sig = fmap withoutBias . foldrM unsafePropL (withBias sig) $ ls
+propogate :: FFNet -> Signal -> PropResult (Either Error)
+propogate (FFNet ls) sig = fmap withoutBias . foldrM propL (withBias sig) $ ls
 
-unsafeBackprop :: FFNet -> ErrorSignal -> BackpropResult IdentityT
+unsafeBackprop :: FFNet -> ErrorSignal -> BackpropResult Identity
 unsafeBackprop = foldrMWithUpdates unsafeBackpropL
-backprop :: FFNet -> ErrorSignal -> BackpropResult (EitherT Error)
+backprop :: FFNet -> ErrorSignal -> BackpropResult (Either Error)
 backprop = foldrMWithUpdates backpropL
 
-predict :: PropConfig -> FFNet -> Signal -> Either Error Signal
-predict p n = fst . (\m -> evalRWS m p ()) . runEitherT . propogate n
+predict :: FFNet -> Input -> Either Error Signal
+predict n = fmap fst . (\m -> evalRWST m () ()) . propogate n . fromVec . toVec
+
+train :: PropConfig -> FFNet -> [(Input, Label)] -> Either Error FFNet
+train conf net dat = foldrM trainBatch net (chunksOf bSize dat)
+  where bSize = conf ^. batchSize
+        trainBatch batch net' = foldrM trainAndUpdate net' batch
+        trainAndUpdate datum net'' = updateWeights net'' =<< train1 conf net'' datum
+
+train1 :: PropConfig -> FFNet -> (Input, Label) -> Either Error Updates
+train1 conf net (inp, lbl) = do
+  let run r s m = evalRWST m r s
+  (sig, pData) <- run () () $ propogate net (fromVec . toVec $ inp)
+  let err = (conf ^. errFunc . getErrSig) lbl sig
+  (_, updates) <- run conf ([], pData) $ backprop net err
+  return updates
 
 {--------------------------------------------------------------------------
 -                            Helper Functions                            -
 --------------------------------------------------------------------------}
-foldrMWithUpdates :: (
-  Monad m ,
-  MonadWriter Updates m,
-  MonadState ([Update], PropData) m) =>
-  (Layer -> ErrorSignal -> m ErrorSignal)
-  -> FFNet -> ErrorSignal -> m ErrorSignal
+foldrMWithUpdates :: Monad m =>
+  (Layer -> ErrorSignal -> BackpropResult m)
+  -> FFNet -> ErrorSignal -> BackpropResult m
 foldrMWithUpdates f (FFNet ls) err = do
-  result <- foldrM f err ls
+  result <- foldrM f err $ reverse ls
   (updates, _) <- get
   tell $ Updates updates
   _1 .= mempty

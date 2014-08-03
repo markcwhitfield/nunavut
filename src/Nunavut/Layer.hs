@@ -10,9 +10,8 @@ module Nunavut.Layer(
   ) where
 
 import Control.Lens (views)
+import Control.Monad.Identity (Identity)
 import Control.Monad.RWS (MonadWriter, MonadState)
-import Control.Monad.Trans.Either (EitherT)
-import Control.Monad.Trans.Identity (IdentityT)
 
 import Nunavut.Layer.Internal
 
@@ -24,16 +23,16 @@ import Nunavut.Util
 {--------------------------------------------------------------------------
 -                              Propogation                               -
 --------------------------------------------------------------------------}
-unsafePropL :: Layer -> Signal -> PropResult IdentityT
+unsafePropL :: Layer -> Signal -> PropResult Identity
 unsafePropL l = across l unsafePropW
 
-propL :: Layer -> Signal -> PropResult (EitherT Error)
+propL :: Layer -> Signal -> PropResult (Either Error)
 propL l = across l propW
 
-unsafeBackpropL :: Layer -> ErrorSignal -> BackpropResult IdentityT
+unsafeBackpropL :: Layer -> ErrorSignal -> BackpropResult Identity
 unsafeBackpropL l = acrossRev l unsafeBackpropW
 
-backpropL :: Layer -> ErrorSignal -> BackpropResult (EitherT Error)
+backpropL :: Layer -> ErrorSignal -> BackpropResult (Either Error)
 backpropL l = acrossRev l backpropW
 
 {--------------------------------------------------------------------------
@@ -50,7 +49,7 @@ across l f a = runActivator =<< runWeights a
         runWeights = views weights f l
 
 acrossRev ::
-  (Monad m, MonadWriter Updates m, MonadState (a, PropDatum) m)
+  (Monad m, MonadWriter Updates m, MonadState (a, PropData) m)
   => Layer
   -> (Weights -> ErrorSignal -> m ErrorSignal)
   -> ErrorSignal
@@ -58,10 +57,3 @@ acrossRev ::
 acrossRev l f a = runActivator a >>= runWeights
   where runActivator = views activator backpropA l
         runWeights = views weights f l
-{-
-backpropL :: Layer -> Signal -> ErrorSignal -> Either Error (ErrorSignal, Update)
-backpropL l a e = dWeights <$> dActivator <$> dFilter <$> (checkDims' e =<< checkDims l a)
-  where dWeights = ((trans $ l ^. weights) <>) &&& outer a
-        dActivator = elementwise (l ^. activator . activatorDeriv)
-        dFilter e' = (l ^. filterL . filterDeriv $ e') <> e'
--}

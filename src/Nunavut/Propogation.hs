@@ -31,9 +31,9 @@ newtype Update = Update { unUpdate :: Matrix Double }
   deriving (Show, Eq)
 
 
-newtype Updates = Updates { unUpdates :: [Update] }
-type PropResult t = t (RWS PropConfig PropData ()) Signal
-type BackpropResult t = t (RWS PropConfig Updates ([Update], PropData)) ErrorSignal
+newtype Updates = Updates { unUpdates :: [Update] } deriving (Show)
+type PropResult m = RWST () PropData () m Signal
+type BackpropResult m = RWST PropConfig Updates ([Update], PropData) m ErrorSignal
 
 {--------------------------------------------------------------------------
 -                                 Lenses                                 -
