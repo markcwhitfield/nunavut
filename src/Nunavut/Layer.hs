@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Nunavut.Layer(
+  initLayer,
   propL,
   unsafePropL,
   backpropL,
@@ -20,6 +21,11 @@ import Nunavut.Layer.Weights
 import Nunavut.Propogation
 import Nunavut.Util
 
+{--------------------------------------------------------------------------
+-                              Constructor                               -
+--------------------------------------------------------------------------}
+initLayer :: Activator -> Int -> Int -> IO Layer 
+initLayer a rs cs = Layer a <$> initWeights rs cs
 {--------------------------------------------------------------------------
 -                              Propogation                               -
 --------------------------------------------------------------------------}

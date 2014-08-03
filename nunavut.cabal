@@ -30,12 +30,18 @@ source-repository head
 library
   exposed-modules:     Nunavut
   other-modules:       Nunavut.Layer,
+                       Nunavut.Layer.Internal,
+                       Nunavut.Layer.Weights,
                        Nunavut.Activator,
-                       Nunavut.Filter,
+                       Nunavut.Activator.Internal,
                        Nunavut.Newtypes,
+                       Nunavut.Newtypes.Internal,
                        Nunavut.NeuralNet,
+                       Nunavut.NeuralNet.Internal,
+                       Nunavut.Propogation
                        Nunavut.Util,
                        Nunavut.Util.NonEmpty,
+                       Nunavut.Util.Error,
                        Nunavut.Util.Dimensions
 
   hs-source-dirs:
@@ -49,6 +55,8 @@ library
     mtl           >= 2.2,
     transformers  >= 0.4,
     semigroups    >= 0.15,
+    split         >= 0.2,
+    random        >= 1.0,
     base          == 4.7.*
 
   default-language:    Haskell2010
@@ -77,6 +85,8 @@ test-suite nunavut-tests
     either        >= 4.3,
     mtl           >= 2.2,
     transformers  >= 0.4,
+    split         >= 0.2,
+    random        >= 1.0,
     base          == 4.7.*
 
   default-language:    Haskell2010

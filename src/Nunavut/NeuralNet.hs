@@ -38,11 +38,11 @@ import Nunavut.Util
 oneLayer :: Layer -> FFNet
 oneLayer l = FFNet (l :| [])
 
-mkFFNet :: [Layer] -> Either Error FFNet
-mkFFNet [] = Left $ mkError "Cannot instantiate empty FFNet"
-mkFFNet (l:[]) = Right . oneLayer $ l
-mkFFNet (l:ls) = addLayer l =<< mkFFNet ls
-
+mkFFNet :: Activator -> (Int, Int) -> [Int] -> IO FFNet
+mkFFNet a (out,inp) [] = oneLayer <$> initLayer a out inp
+mkFFNet a (out,inp) (l:ls) = unsafeAddLayer <$> initLayer a out l <*> go (l:|ls)
+  where go (out':|[]) = oneLayer <$> initLayer a out' inp
+        go (out':|inp':ls') = unsafeAddLayer <$> initLayer a out' inp' <*> go (inp':|ls')
 
 {--------------------------------------------------------------------------
 -                              Propogation                               -
@@ -90,6 +90,9 @@ foldrMWithUpdates f (FFNet ls) err = do
 addLayer :: Layer -> FFNet -> Either Error FFNet
 addLayer = ifDimsMatch doAdd
   where doAdd l = over layers (l <|)
+
+unsafeAddLayer :: Layer -> FFNet -> FFNet
+unsafeAddLayer l = over layers (l <|)
 
 updateWeights :: FFNet -> Updates -> Either Error FFNet
 updateWeights (FFNet lls) (Updates uus) = go lls uus

@@ -5,7 +5,8 @@ import Control.Monad.Trans.RWS (tell, get, ask, mapRWST)
 import Control.Monad.Trans (lift)
 import Control.Monad.Identity (Identity, runIdentity)
 import Data.Monoid (mempty, mappend)
-import Numeric.LinearAlgebra (Matrix, rows, cols)
+import Numeric.LinearAlgebra (Matrix, rows, cols, randomVector, reshape, RandDist(..), scale)
+import System.Random (randomIO)
 
 import Nunavut.Propogation
 import Nunavut.Newtypes
@@ -14,8 +15,18 @@ import Nunavut.Util
 newtype Weights = Weights { unWeights :: Matrix Double }
   deriving (Show, Eq)
 
+{--------------------------------------------------------------------------
+-                              Constructors                              -
+--------------------------------------------------------------------------}
 mkWeights :: Matrix Double -> Weights
 mkWeights = Weights
+
+initWeights :: Int -> Int -> IO Weights
+initWeights rs cs = do
+  seed <- randomIO
+  let cs' = succ cs
+  let stdev = fromIntegral cs' ** (-0.5)
+  return . fromMtx . reshape cs' . scale stdev . randomVector seed Gaussian $ (rs * cs')
 
 {--------------------------------------------------------------------------
 -                               Instances                                -
