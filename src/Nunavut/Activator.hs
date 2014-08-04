@@ -2,6 +2,7 @@
 module Nunavut.Activator (
   propA,
   backpropA,
+  unsafeBackpropA,
   activatorFunc,
   activatorDeriv,
   softmax,
@@ -13,7 +14,10 @@ module Nunavut.Activator (
   ) where
 
 import Control.Lens ((^.), (%=), _2)
-import Control.Monad.RWS (MonadState, MonadWriter, get, tell)
+import Control.Monad.Identity (Identity, runIdentity)
+import Control.Monad.Trans (lift)
+import Control.Monad.Trans.RWS (get, mapRWST)
+import Control.Monad.Writer (MonadWriter, tell)
 import Data.Monoid (mempty)
 import Numeric.LinearAlgebra (diag, outer, maxElement)
 
@@ -21,26 +25,30 @@ import Nunavut.Activator.Internal
 import Nunavut.Newtypes
 import Nunavut.Propogation
 import Nunavut.Signals (Signal, ErrorSignal)
+import Nunavut.Util (Error, ifDimsMatch)
 
 {--------------------------------------------------------------------------
 -                              Propogation                               -
 --------------------------------------------------------------------------}
 propA :: (Monad m, MonadWriter PropData m)
   => Activator -> Signal -> m Signal
-propA f sig = do
+propA a sig = do
   tell $ PData mempty [sig]
-  return . withBias $ (f ^. activatorFunc) sig
+  return . withBias $ (a ^. activatorFunc) sig
 
-backpropA :: (
-  Monad m,
-  MonadWriter Updates m,
-  MonadState (a, PropData) m)
-  => Activator -> ErrorSignal -> m ErrorSignal
-backpropA f err = do
+unsafeBackpropA :: Activator -> ErrorSignal -> BackpropResult Identity
+unsafeBackpropA a err = do
   (_, pData) <- get
-  let jac = (f ^. activatorDeriv) (head $ pData ^. preActivated)
+  let jac = (a ^. activatorDeriv) (head $ pData ^. preActivated)
   _2 . preActivated %= tail
-  return . withoutBias $ trans jac <> err
+  return . (trans jac <>) . withoutBias $ err
+
+backpropA :: Activator -> ErrorSignal -> BackpropResult (Either Error)
+backpropA a err = do
+  (_, pData) <- get
+  let preA = head $ pData ^. preActivated
+  checkedErr <- lift $ ifDimsMatch (\_ -> const err) preA (withoutBias err)
+  mapRWST (return . runIdentity) . unsafeBackpropA a $ checkedErr
 
 {--------------------------------------------------------------------------
 -                            Helper Functions                            -

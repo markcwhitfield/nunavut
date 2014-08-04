@@ -21,6 +21,24 @@ isTotal3 :: (Arbitrary a, Show a, Arbitrary b, Show b, Arbitrary c, Show c) => (
 isTotal3 f = it "is a total function" $ property $
                     \x y z -> f x y z `seq` True
 
+isTotal4 :: (
+  Arbitrary a, Show a,
+  Arbitrary b, Show b,
+  Arbitrary c, Show c,
+  Arbitrary d, Show d)
+  => (a -> b -> c -> d -> e) -> Spec
+isTotal4 f = it "is a total function" $ property $
+                    \w x y z -> f w x y z `seq` True
+
+isTotal5 :: (
+  Arbitrary a, Show a,
+  Arbitrary b, Show b,
+  Arbitrary c, Show c,
+  Arbitrary d, Show d,
+  Arbitrary e, Show e)
+  => (a -> b -> c -> d -> e -> f) -> Spec
+isTotal5 f = it "is a total function" $ property $
+                    \v w x y z -> f v w x y z `seq` True
 
 {--------------------------------------------------------------------------
 -                       Typeclass Law Verification                       -

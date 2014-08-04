@@ -2,7 +2,8 @@ module Nunavut.ActivatorSpec where
 
 import Control.Lens ((^.))
 import Control.Monad.Writer (runWriter)
-import Control.Monad.Trans.RWS (runRWS)
+import Control.Monad.Trans.RWS (evalRWST)
+import Data.Either (isRight)
 import Numeric.LinearAlgebra (flatten, sub, minElement, maxElement, prodElements)
 import Test.Hspec
 import Test.QuickCheck
@@ -16,10 +17,11 @@ import Nunavut.Util.TestUtils
 spec :: Spec
 spec = do
   describe "propA" $
-    isTotal2 (\a s -> runWriter $ propA a s)
+    isTotal2 (\a s -> fst . runWriter $ propA a s)
 
   describe "backpropA" $
-    isTotal3 (\a e datum -> runRWS (backpropA a e) () ([], PData [] datum))
+    isTotal3 (\a e datum conf ->
+      isRight . fmap fst $ evalRWST (backpropA a e) conf ([], PData [] [datum]))
 
   describe "activatorFunc" $ do
     isTotal2 (\a z -> (a ^. activatorFunc) z)

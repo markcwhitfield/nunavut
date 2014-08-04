@@ -26,8 +26,8 @@ import Data.List.Split (chunksOf)
 import Data.Monoid (mempty)
 import Data.Text.Lazy (pack, concat)
 
-import Nunavut.Activator (Activator)
 import Nunavut.ErrorFunction (getErrSig)
+import Nunavut.Activator (Activator)
 import Nunavut.Layer (Layer, initLayer, propL, backpropL, unsafePropL, unsafeBackpropL, weights)
 import Nunavut.Newtypes (Input, HasVec(..), Label, wrapM) 
 import Nunavut.Propogation (PropResult, BackpropResult, Update(..), Updates(..), withBias, withoutBias, PropConfig(..), batchSize, errFunc)
@@ -90,8 +90,7 @@ foldrMWithUpdates f (FFNet ls) err = do
   return result
 
 addLayer :: Layer -> FFNet -> Either Error FFNet
-addLayer = ifDimsMatch doAdd
-  where doAdd l = over layers (l <|)
+addLayer = ifDimsMatch unsafeAddLayer
 
 unsafeAddLayer :: Layer -> FFNet -> FFNet
 unsafeAddLayer l = over layers (l <|)

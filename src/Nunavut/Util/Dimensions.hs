@@ -20,11 +20,11 @@ class SizedOperator a where
 {--------------------------------------------------------------------------
 -                            Helper Functions                            -
 --------------------------------------------------------------------------}
-checkDims :: (SizedOperator a, SizedOperator b) => a -> b -> Either Error b
-checkDims = ifDimsMatch (\_ b -> b)
+checkDims' :: (SizedOperator a, SizedOperator b) => a -> b -> Either Error b
+checkDims' = ifDimsMatch (\_ b -> b)
 
-checkDims' :: (SizedOperator a, SizedOperator b) => a -> b -> Either Error a
-checkDims' = ifDimsMatch const
+checkDims :: (SizedOperator a, SizedOperator b) => a -> b -> Either Error a
+checkDims = ifDimsMatch const
 
 dimMismatch :: (SizedOperator a, SizedOperator b) => a -> b -> Error
 dimMismatch a b = mkError . concat $ [
@@ -33,6 +33,6 @@ dimMismatch a b = mkError . concat $ [
                   "Does not match input size ", pack . show $ b ^. inSize] 
 
 ifDimsMatch :: (SizedOperator a, SizedOperator b) => (a -> b -> c) -> a -> b -> Either Error c
-ifDimsMatch f a b = if dimsMatch b a
+ifDimsMatch f a b = if dimsMatch a b
                     then Right $ f a b
-                    else Left $ dimMismatch b a
+                    else Left $ dimMismatch a b

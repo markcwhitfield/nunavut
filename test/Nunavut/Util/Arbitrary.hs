@@ -224,3 +224,14 @@ instance Arbitrary PropConfig where
 
 instance Arbitrary ErrorFunction where
   arbitrary = elements [sumOfSquares]
+
+data MatchLayerPData = MatchLPD Layer PropData
+  deriving (Show)
+
+instance SizedGen2 MatchLayerPData where
+  sizedGen2 out inp = do
+    wghts <- sizedGen2 (pred out) inp
+    activ <- arbitrary
+    preW <- sizedGen inp
+    preA <- sizedGen (pred out)
+    return $ MatchLPD (Layer activ wghts) (PData [preW] [preA])

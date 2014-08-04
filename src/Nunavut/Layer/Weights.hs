@@ -50,7 +50,7 @@ unsafePropW w sig = do
 
 propW :: Weights -> Signal -> PropResult (Either Error)
 propW w sig = do
-  checkedSig <- lift $ checkDims w sig
+  checkedSig <- lift $ checkDims sig w
   mapRWST (return . runIdentity) . unsafePropW w $ checkedSig
 
 unsafeBackpropW :: Weights -> ErrorSignal -> BackpropResult Identity
@@ -64,7 +64,7 @@ unsafeBackpropW w err = do
 
 backpropW :: Weights -> ErrorSignal -> BackpropResult (Either Error)
 backpropW w err = do
-   checkedErr <- lift $ checkDims' err w
+   checkedErr <- lift $ checkDims' w err
    mapRWST (return . runIdentity) . unsafeBackpropW w $ checkedErr
 
 shape :: Weights -> (Int, Int)
