@@ -23,7 +23,7 @@ import Control.Monad.Identity (Identity)
 import Data.Foldable (foldrM)
 import Data.List.NonEmpty (NonEmpty(..), reverse, (<|), fromList, toList)
 import Data.List.Split (chunksOf)
-import Data.Monoid (mempty)
+import Data.Monoid (mempty, mappend)
 import Data.Text.Lazy (pack, concat)
 
 import Nunavut.ErrorFunction (getErrSig)
@@ -65,8 +65,8 @@ predict n = fmap fst . (\m -> evalRWST m () ()) . propogate n . fromVec . toVec
 train :: PropConfig -> FFNet -> [(Input, Label)] -> Either Error FFNet
 train conf net dat = foldrM trainBatch net (chunksOf bSize dat)
   where bSize = conf ^. batchSize
-        trainBatch batch net' = foldrM trainAndUpdate net' batch
-        trainAndUpdate datum net'' = updateWeights net'' =<< train1 conf net'' datum
+        trainBatch batch net' = updateWeights net' =<< foldrM trainAndUpdate mempty batch
+         where trainAndUpdate datum updates = (updates `mappend`) <$> train1 conf net' datum
 
 train1 :: PropConfig -> FFNet -> (Input, Label) -> Either Error Updates
 train1 conf net (inp, lbl) = do
