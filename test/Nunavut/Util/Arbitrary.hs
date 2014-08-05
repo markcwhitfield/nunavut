@@ -6,6 +6,7 @@ module Nunavut.Util.Arbitrary where
 import Control.Lens ((^.))
 import Control.Monad (liftM, liftM2)
 import Data.List.NonEmpty (NonEmpty(..), (<|))
+import Data.Monoid (mappend)
 import Numeric.LinearAlgebra
 import Test.QuickCheck hiding ((><))
 
@@ -210,7 +211,11 @@ instance Arbitrary Input where
   arbitrary = arbVec
 
 instance Arbitrary PropData where
-  arbitrary = liftM2 PData arbitrary arbitrary
+  arbitrary = do 
+    len <- arbitrary
+    preW <- vector len
+    preA <- vector len
+    return $ PData preW preA
 
 instance Arbitrary Norm where
   arbitrary = elements [L1, L2, Frob, InfNorm]
@@ -235,3 +240,28 @@ instance SizedGen2 MatchLayerPData where
     preW <- sizedGen inp
     preA <- sizedGen (pred out)
     return $ MatchLPD (Layer activ wghts) (PData [preW] [preA])
+
+instance Arbitrary MatchLayerPData where
+  arbitrary = arbSGen2
+
+data MatchNetPData = MatchNPD FFNet PropData
+  deriving (Show)
+
+instance SizedGen2 MatchNetPData where
+  sizedGen2 out inp = sizedGen3 out inp =<< arbitrary
+
+sizedGen3 :: Positive Int -> Positive Int -> Positive Int -> Gen MatchNetPData
+sizedGen3 out inp len =
+  case len of
+    (Positive 1) -> do
+      (MatchLPD l pdata) <- sizedGen2 out inp
+      return $ MatchNPD (FFNet (l :| [])) pdata
+    _ -> do
+      out' <- arbitrary
+      (MatchNPD (FFNet ls) pdata) <- sizedGen3 out' inp $ pred len
+      (MatchLPD l pdatum) <- sizedGen2 out out'
+      return $ MatchNPD (FFNet $ l <| ls) (pdatum `mappend` pdata)
+        
+
+instance Arbitrary MatchNetPData where
+  arbitrary = arbSGen2

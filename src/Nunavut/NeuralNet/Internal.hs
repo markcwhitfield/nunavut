@@ -3,7 +3,7 @@ module Nunavut.NeuralNet.Internal where
 
 import Prelude hiding (reverse)
 
-import Control.Lens (makeLenses)
+import Control.Lens (makeLenses, to, views)
 import Data.List (intercalate)
 import Data.List.NonEmpty (NonEmpty, toList)
 
@@ -26,4 +26,4 @@ instance Show FFNet where
   show (FFNet ls) = intercalate "\n" . toList $ fmap show ls
 instance SizedOperator FFNet where
   inSize = layers . _last . inSize
-  outSize = layers . _head . outSize
+  outSize = to $ views (layers . _head . outSize) pred
