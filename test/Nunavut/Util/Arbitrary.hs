@@ -7,6 +7,7 @@ import Control.Lens ((^.))
 import Control.Monad (liftM, liftM2)
 import Data.List.NonEmpty (NonEmpty(..), (<|))
 import Data.Monoid (mappend)
+import Debug.Trace
 import Numeric.LinearAlgebra
 import Test.QuickCheck hiding ((><))
 
@@ -35,7 +36,10 @@ class SizedGen a where
   sizedGen :: Positive Int -> Gen a
 
 class SizedGen2 a where
-  sizedGen2 :: Positive Int -> Positive Int -> Gen a
+  sizedGen2 :: Positive Int -> Positive Int -> Gen a 
+
+class SizedGen3 a where
+  sizedGen3 :: Positive Int -> Positive Int -> Positive Int -> Gen a
 
 newtype (HasMtx a) => SmallMtx a = SmallMtx a
   deriving (Show, Eq)
@@ -133,17 +137,21 @@ instance (SizedGen a, SizedGen2 b) => Arbitrary (MatchVM a b) where
 instance (SizedGen a, SizedGen b) => Arbitrary (MatchVV a b) where
   arbitrary = arbSGen
 
+instance SizedGen3 FFNet where
+  sizedGen3 out inp len =
+    --traceShow (out,inp,len) $
+    case len of
+      (Positive 1) -> do
+        l <- sizedGen2 (succ out) (succ inp)
+        return $ FFNet (l :| [])
+      _ -> do
+        out' <- arbitrary
+        (FFNet ls) <- sizedGen3 out' inp $ pred len
+        l <- sizedGen2 (succ out) (succ out')
+        return . FFNet $ l <| ls
 
 instance SizedGen2 FFNet where
-  sizedGen2 inp (Positive 1) = do
-    out <- arbitrary
-    layer <- sizedGen2 out inp
-    return . FFNet $ (layer:|[])
-  sizedGen2 inp (Positive n) = do
-    net@(FFNet ls) <- sizedGen2 inp (Positive $ n - 1)
-    rs <- arbitrary
-    layer <- sizedGen2 rs (Positive $ net ^. outSize)
-    return . FFNet $ layer <| ls
+  sizedGen2 out inp = sizedGen3 out inp =<< arbitrary
 
 matchingMtxArb :: (HasVec s, HasMtx t) => (t -> s -> b) -> Gen b
 matchingMtxArb f = do
@@ -250,17 +258,17 @@ data MatchNetPData = MatchNPD FFNet PropData
 instance SizedGen2 MatchNetPData where
   sizedGen2 out inp = sizedGen3 out inp =<< arbitrary
 
-sizedGen3 :: Positive Int -> Positive Int -> Positive Int -> Gen MatchNetPData
-sizedGen3 out inp len =
-  case len of
-    (Positive 1) -> do
-      (MatchLPD l pdata) <- sizedGen2 out inp
-      return $ MatchNPD (FFNet (l :| [])) pdata
-    _ -> do
-      out' <- arbitrary
-      (MatchNPD (FFNet ls) pdata) <- sizedGen3 out' inp $ pred len
-      (MatchLPD l pdatum) <- sizedGen2 out out'
-      return $ MatchNPD (FFNet $ l <| ls) (pdatum `mappend` pdata)
+instance SizedGen3 MatchNetPData where
+  sizedGen3 out inp len =
+    case len of
+      (Positive 1) -> do
+        (MatchLPD l pdata) <- sizedGen2 (succ out) (succ inp)
+        return $ MatchNPD (FFNet (l :| [])) pdata
+      _ -> do
+        out' <- arbitrary
+        (MatchNPD (FFNet ls) pdata) <- sizedGen3 out' inp $ pred len
+        (MatchLPD l pdatum) <- sizedGen2 (succ out) (succ out')
+        return $ MatchNPD (FFNet $ l <| ls) (pdatum `mappend` pdata)
         
 
 instance Arbitrary MatchNetPData where

@@ -55,9 +55,9 @@ propogate :: FFNet -> Signal -> PropResult (Either Error)
 propogate (FFNet ls) sig = fmap withoutBias . foldrM propL (withBias sig) $ ls
 
 unsafeBackprop :: FFNet -> ErrorSignal -> BackpropResult Identity
-unsafeBackprop = foldrMWithUpdates unsafeBackpropL
+unsafeBackprop net = foldrMWithUpdates unsafeBackpropL net . withBias
 backprop :: FFNet -> ErrorSignal -> BackpropResult (Either Error)
-backprop = foldrMWithUpdates backpropL
+backprop net = foldrMWithUpdates backpropL net . withBias
 
 predict :: FFNet -> Input -> Either Error Signal
 predict n = fmap fst . (\m -> evalRWST m () ()) . propogate n . fromVec . toVec

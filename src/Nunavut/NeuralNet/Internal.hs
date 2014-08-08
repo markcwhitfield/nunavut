@@ -25,5 +25,5 @@ makeLenses ''FFNet
 instance Show FFNet where
   show (FFNet ls) = intercalate "\n" . toList $ fmap show ls
 instance SizedOperator FFNet where
-  inSize = layers . _last . inSize
+  inSize = to $ views (layers . _last . inSize) pred
   outSize = to $ views (layers . _head . outSize) pred
