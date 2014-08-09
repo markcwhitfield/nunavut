@@ -4,7 +4,7 @@ module Nunavut.Util.Dimensions where
 import Prelude hiding (concat)
 
 import Control.Lens (Getter, (^.))
-import Data.Text.Lazy (pack, concat)
+import Data.Text.Lazy (pack, concat, Text)
 
 import Nunavut.Util.Error
 
@@ -20,19 +20,20 @@ class SizedOperator a where
 {--------------------------------------------------------------------------
 -                            Helper Functions                            -
 --------------------------------------------------------------------------}
-checkDims' :: (SizedOperator a, SizedOperator b) => a -> b -> Either Error b
-checkDims' = ifDimsMatch (\_ b -> b)
+checkDims' :: (SizedOperator a, SizedOperator b) => Text -> a -> b -> Either Error b
+checkDims' name = ifDimsMatch name (\_ b -> b)
 
-checkDims :: (SizedOperator a, SizedOperator b) => a -> b -> Either Error a
-checkDims = ifDimsMatch const
+checkDims :: (SizedOperator a, SizedOperator b) => Text -> a -> b -> Either Error a
+checkDims name = ifDimsMatch name const
 
-dimMismatch :: (SizedOperator a, SizedOperator b) => a -> b -> Error
-dimMismatch a b = mkError . concat $ [
+dimMismatch :: (SizedOperator a, SizedOperator b) => Text -> a -> b -> Error
+dimMismatch name a b = mkError . concat $ [
+                  name, ": ",
                   "Dimension Mismatch: ",
                   "Output size ", pack . show $ a ^. outSize,
                   "Does not match input size ", pack . show $ b ^. inSize] 
 
-ifDimsMatch :: (SizedOperator a, SizedOperator b) => (a -> b -> c) -> a -> b -> Either Error c
-ifDimsMatch f a b = if dimsMatch a b
-                    then Right $ f a b
-                    else Left $ dimMismatch a b
+ifDimsMatch :: (SizedOperator a, SizedOperator b) => Text -> (a -> b -> c) -> a -> b -> Either Error c
+ifDimsMatch name f a b = if dimsMatch a b
+                         then Right $ f a b
+                         else Left $ dimMismatch name a b

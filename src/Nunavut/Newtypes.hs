@@ -22,11 +22,13 @@ module Nunavut.Newtypes (
   HasVec(..),
   HasMtx(..),
   wrapM,
+  shape,
   (<>),
   addConst,
   trans,
   ) where
 
+import Control.Arrow ((&&&))
 import Control.Lens (to)
 import Numeric.LinearAlgebra (
   Matrix, Vector, dim, cols, rows,
@@ -99,6 +101,10 @@ instance HasMtx Jacobian where
   toMtx = unJacob
   fromMtx = mkJacob
 
+instance HasMtx (Matrix Double) where
+  toMtx = id
+  fromMtx = id
+
 instance (HasMtx a, HasVec b) => Mul a b b where
   a <> b = fromVec $ toMtx a LA.<> toVec b
 instance (HasMtx a) => Mul a a a where
@@ -135,3 +141,6 @@ elementwise f = fromVec . mapVector f . toVec
 
 addConst :: (HasVec a) => Double -> a -> a
 addConst a = fromVec . addConstant a . toVec
+
+shape :: (HasMtx a) => a -> (Int, Int)
+shape = (rows &&& cols) . toMtx

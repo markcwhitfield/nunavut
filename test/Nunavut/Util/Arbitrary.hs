@@ -1,13 +1,15 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Nunavut.Util.Arbitrary where
 
-import Control.Lens ((^.))
+{-import Control.Lens ((^.))-}
 import Control.Monad (liftM, liftM2)
 import Data.List.NonEmpty (NonEmpty(..), (<|))
+import qualified Data.List.NonEmpty as NE
 import Data.Monoid (mappend)
-import Debug.Trace
+{-import Debug.Trace-}
 import Numeric.LinearAlgebra
 import Test.QuickCheck hiding ((><))
 
@@ -21,7 +23,7 @@ import Nunavut.Newtypes
 import Nunavut.Newtypes.Internal
 import Nunavut.Propogation hiding ((><))
 import Nunavut.Signals
-import Nunavut.Util
+{-import Nunavut.Util-}
 
 data MatchMM a b = MatchMM a b
   deriving (Show, Eq)
@@ -32,6 +34,11 @@ data MatchVM a b = MatchVM a b
 data MatchVV a b = MatchVV a b
   deriving (Show, Eq)
 
+data MatchTT a b = MatchTT a b
+  deriving (Show, Eq)
+data MatchVT a b = MatchVT a b
+  deriving (Show, Eq)
+
 class SizedGen a where
   sizedGen :: Positive Int -> Gen a
 
@@ -40,6 +47,9 @@ class SizedGen2 a where
 
 class SizedGen3 a where
   sizedGen3 :: Positive Int -> Positive Int -> Positive Int -> Gen a
+
+class Concat a where
+  koncat :: a -> a -> a
 
 newtype (HasMtx a) => SmallMtx a = SmallMtx a
   deriving (Show, Eq)
@@ -79,7 +89,16 @@ sizedVec = fmap unSizedV . sizedGen
 instance SizedGen2 Weights where
   sizedGen2 = sizedMtx
 
+instance SizedGen2 Update where
+  sizedGen2 = sizedMtx
+
 instance SizedGen Signal where
+  sizedGen = sizedVec
+
+instance SizedGen Input where
+  sizedGen = sizedVec
+
+instance SizedGen Label where
   sizedGen = sizedVec
 
 instance SizedGen ErrorSignal where
@@ -116,6 +135,26 @@ instance (SizedGen a, SizedGen b) => SizedGen (MatchVV a b) where
     b <- sizedGen rs
     return $ MatchVV a b
 
+instance (Concat a, SizedGen3 a, Concat b, SizedGen3 b) => SizedGen3 (MatchTT a b) where
+  sizedGen3 rs cs len@(Positive 1) = do
+    a <- sizedGen3 rs cs len
+    b <- sizedGen3 rs cs len
+    return . MatchTT a $ b
+  sizedGen3 rs cs len = do
+    rs' <- arbitrary
+    tt <- sizedGen3 rs' cs (pred len)
+    tt' <- sizedGen3 rs rs' (Positive 1)
+    return . koncat tt' $ tt
+
+instance (Concat a, Concat b) => Concat (MatchTT a b) where
+  (MatchTT a1 b1) `koncat` (MatchTT a2 b2) = MatchTT (a1 `koncat` a2) (b1 `koncat` b2)
+
+instance (SizedGen a, SizedGen3 b) => SizedGen3 (MatchVT a b) where
+  sizedGen3 rs cs len = do
+    a <- sizedGen rs
+    b <- sizedGen3 rs cs len
+    return $ MatchVT a b
+
 arbSGen :: (SizedGen a) => Gen a
 arbSGen = sizedGen =<< arbitrary
 
@@ -124,6 +163,13 @@ arbSGen2 = do
   rs <- arbitrary
   cs <- arbitrary
   sizedGen2 rs cs
+
+arbSGen3 :: (SizedGen3 a) => Gen a
+arbSGen3 = do
+  rs <- arbitrary
+  cs <- arbitrary
+  len <- arbitrary
+  sizedGen3 rs cs len
 
 instance (SizedGen2 a, SizedGen2 b) => Arbitrary (MatchMM a b) where
   arbitrary = arbSGen2
@@ -137,6 +183,12 @@ instance (SizedGen a, SizedGen2 b) => Arbitrary (MatchVM a b) where
 instance (SizedGen a, SizedGen b) => Arbitrary (MatchVV a b) where
   arbitrary = arbSGen
 
+instance (SizedGen3 a, Concat a, SizedGen3 b, Concat b) => Arbitrary (MatchTT a b) where
+  arbitrary = arbSGen3
+
+instance (SizedGen a, SizedGen3 b) => Arbitrary (MatchVT a b) where
+  arbitrary = arbSGen3
+
 instance SizedGen3 FFNet where
   sizedGen3 out inp len =
     --traceShow (out,inp,len) $
@@ -149,6 +201,8 @@ instance SizedGen3 FFNet where
         (FFNet ls) <- sizedGen3 out' inp $ pred len
         l <- sizedGen2 (succ out) (succ out')
         return . FFNet $ l <| ls
+instance Concat FFNet where
+  (FFNet ls) `koncat` (FFNet ms) = FFNet (NE.fromList $ NE.toList ls ++ NE.toList ms)
 
 instance SizedGen2 FFNet where
   sizedGen2 out inp = sizedGen3 out inp =<< arbitrary
@@ -184,6 +238,12 @@ arbVec = do
 
 instance Arbitrary Weights where
   arbitrary = arbMtx
+
+instance Arbitrary Update where
+  arbitrary = arbMtx
+
+instance Arbitrary Updates where
+  arbitrary = arbSGen3
 
 instance Arbitrary Jacobian where
   arbitrary = arbMtx
@@ -255,21 +315,34 @@ instance Arbitrary MatchLayerPData where
 data MatchNetPData = MatchNPD FFNet PropData
   deriving (Show)
 
-instance SizedGen2 MatchNetPData where
-  sizedGen2 out inp = sizedGen3 out inp =<< arbitrary
-
-instance SizedGen3 MatchNetPData where
+instance SizedGen3 PropData where
   sizedGen3 out inp len =
     case len of
       (Positive 1) -> do
-        (MatchLPD l pdata) <- sizedGen2 (succ out) (succ inp)
-        return $ MatchNPD (FFNet (l :| [])) pdata
+        preW <- sizedGen $ succ inp
+        preA <- sizedGen out
+        return . PData [preW] $ [preA]
       _ -> do
         out' <- arbitrary
-        (MatchNPD (FFNet ls) pdata) <- sizedGen3 out' inp $ pred len
-        (MatchLPD l pdatum) <- sizedGen2 (succ out) (succ out')
-        return $ MatchNPD (FFNet $ l <| ls) (pdatum `mappend` pdata)
-        
+        next <- sizedGen3 out out' (Positive 1)
+        prev <- sizedGen3 out' inp (pred len)
+        return . koncat next $ prev
 
-instance Arbitrary MatchNetPData where
-  arbitrary = arbSGen2
+instance Concat PropData where
+  (PData a1 b1) `koncat` (PData a2 b2) = PData (mappend a1 a2) (mappend b1 b2)
+
+instance SizedGen3 Updates where
+  sizedGen3 out inp len = 
+    {-traceShow (out,inp,len) $-}
+    case len of
+      (Positive 1) -> do
+        u <- sizedGen2 out (succ inp)
+        return $ Updates [u]
+      _ -> do
+        out' <- arbitrary
+        (Updates us) <- sizedGen3 out' inp $ pred len
+        u <- sizedGen2 out (succ out')
+        return {-. traceShow out'-} . Updates $ u : us
+
+instance Concat Updates where
+  (Updates us) `koncat` (Updates vs) = Updates . mappend us $ vs

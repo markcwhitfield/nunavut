@@ -50,7 +50,7 @@ unsafePropW w sig = do
 
 propW :: Weights -> Signal -> PropResult (Either Error)
 propW w sig = do
-  checkedSig <- lift $ checkDims sig w
+  checkedSig <- lift $ checkDims "propW" sig w
   mapRWST (return . runIdentity) . unsafePropW w $ checkedSig
 
 unsafeBackpropW :: Weights -> ErrorSignal -> BackpropResult Identity
@@ -58,13 +58,13 @@ unsafeBackpropW w err = do
   conf <- ask
   (_, pData) <- get
   let mulRate = mtxElementwise (* conf  ^. learningRate)
-  _1 %= (`mappend` [mulRate $ head (pData ^. preWeights) >< err])
+  _1 %= (`mappend` [mulRate . trans $ head (pData ^. preWeights) >< err])
   _2 . preWeights %= tail
   return $ trans w <> err
 
 backpropW :: Weights -> ErrorSignal -> BackpropResult (Either Error)
 backpropW w err = do
-   checkedErr <- lift $ checkDims' w err
+   checkedErr <- lift $ checkDims' "backpropW" w err
    mapRWST (return . runIdentity) . unsafeBackpropW w $ checkedErr
 
 shape :: Weights -> (Int, Int)

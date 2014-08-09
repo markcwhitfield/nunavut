@@ -47,7 +47,7 @@ backpropA :: Activator -> ErrorSignal -> BackpropResult (Either Error)
 backpropA a err = do
   (_, pData) <- get
   let preA = head $ pData ^. preActivated
-  checkedErr <- lift $ ifDimsMatch (\_ -> const err) preA (withoutBias err)
+  checkedErr <- lift $ ifDimsMatch "backpropA" (\_ -> const err) preA (withoutBias err)
   mapRWST (return . runIdentity) . unsafeBackpropA a $ checkedErr
 
 {--------------------------------------------------------------------------
