@@ -12,8 +12,8 @@ import Nunavut.Signals (Signal)
 data ActivatorType = Softmax | Logistic | RectifiedLinear | Linear | Tanh
   deriving (Show, Eq)
 data Activator = Activator {
-              _activatorType :: ActivatorType,
-              _activatorFunc :: Signal -> Signal,
+              _activatorType  :: ActivatorType,
+              _activatorFunc  :: Signal -> Signal,
               _activatorDeriv :: Signal -> Jacobian
               }
 makeLenses ''Activator
@@ -22,4 +22,4 @@ makeLenses ''Activator
 -                               Instances                                -
 --------------------------------------------------------------------------}
 instance Show Activator where
-  show = show . (^. activatorType)
+  show                        = show . (^. activatorType)

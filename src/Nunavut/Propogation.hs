@@ -1,53 +1,67 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Nunavut.Propogation where
 
-import Control.Lens (Lens', lens)
-import Control.Monad.Trans.RWS (RWST)
-import Data.Monoid (Monoid, mappend, mempty)
-import Numeric.LinearAlgebra (Matrix, outer, fromList, toList)
+import           Control.Lens            (Lens', lens)
+import           Control.Monad.Trans.RWS (RWST)
+import           Data.Monoid             (Monoid, mappend, mempty)
+import           Numeric.LinearAlgebra   (Matrix, fromList, outer, toList)
 
-import Nunavut.ErrorFunction (ErrorFunction)
-import Nunavut.Newtypes (HasMtx(..), HasVec(..))
-import Nunavut.Signals (Signal(..), ErrorSignal(..))
+import           Nunavut.ErrorFunction   (ErrorFunction)
+import           Nunavut.Newtypes        (HasMtx (..), HasVec (..))
+import           Nunavut.Signals         (ErrorSignal (..), Signal (..))
 
 {--------------------------------------------------------------------------
 -                                 Types                                  -
 --------------------------------------------------------------------------}
-data PropConfig = PConfig { 
-                  _learningRate :: Double,
-                  _batchSize    :: Int,
-                  _errFunc      :: ErrorFunction
+data PropConfig = PConfig {
+                  _learningRate       :: Double,
+                  _batchSize          :: Int,
+                  _errFunc            :: ErrorFunction
                   } deriving (Show)
 data PropData = PData {
-                _preWeights   :: [Signal],
-                _preActivated :: [Signal]
+                _preWeights           :: [Signal],
+                _preActivated         :: [Signal]
                 } deriving (Show, Eq)
 
-newtype Update = Update { unUpdate :: Matrix Double }
+data PropDatum = PDatum {
+                _preWeights1          :: Signal,
+                _preActivated1        :: Signal
+                } deriving (Show, Eq)
+
+newtype Update = Update { unUpdate    :: Matrix Double }
   deriving (Show, Eq)
+newtype Updates = Updates { unUpdates :: [Update] }
+  deriving (Show)
 
+type PropResult m        = RWST () PropData () m Signal
+type BackpropResult m    = RWST PropConfig Updates ([Update], PropData) m ErrorSignal
 
-newtype Updates = Updates { unUpdates :: [Update] } deriving (Show)
-type PropResult m = RWST () PropData () m Signal
-type BackpropResult m = RWST PropConfig Updates ([Update], PropData) m ErrorSignal
+type Propogation a m     = a -> Signal -> PropResult m
+type Backpropogation a m = a -> ErrorSignal -> BackpropResult m
 
 {--------------------------------------------------------------------------
 -                                 Lenses                                 -
 --------------------------------------------------------------------------}
 learningRate :: Lens' PropConfig Double
-learningRate = lens _learningRate (\c r -> c { _learningRate = r })
+learningRate                              = lens _learningRate (\c r -> c { _learningRate = r })
 
 batchSize :: Lens' PropConfig Int
-batchSize = lens _batchSize (\c r -> c { _batchSize = r })
+batchSize                                 = lens _batchSize (\c r -> c { _batchSize = r })
 
 errFunc :: Lens' PropConfig ErrorFunction
-errFunc = lens _errFunc (\c r -> c { _errFunc = r })
+errFunc                                   = lens _errFunc (\c r -> c { _errFunc = r })
 
 preWeights :: Lens' PropData [Signal]
-preWeights = lens _preWeights (\p s -> p { _preWeights = s })
+preWeights                                = lens _preWeights (\p s -> p { _preWeights = s })
 
 preActivated :: Lens' PropData [Signal]
-preActivated = lens _preActivated (\p s -> p { _preActivated = s })
+preActivated                              = lens _preActivated (\p s -> p { _preActivated = s })
+
+preWeights1 :: Lens' PropDatum Signal
+preWeights1                               = lens _preWeights1 (\p s -> p { _preWeights1 = s })
+
+preActivated1 :: Lens' PropDatum Signal
+preActivated1                             = lens _preActivated1 (\p s -> p { _preActivated1 = s })
 
 
 {--------------------------------------------------------------------------
@@ -60,31 +74,32 @@ mkUpdate = Update
 -                               Instances                                -
 --------------------------------------------------------------------------}
 instance Monoid PropData where
-  mempty = PData mempty mempty
-  mappend (PData w1 a1) (PData w2 a2) =
-    PData (w1 `mappend` w2) (a1 `mappend` a2)
+  mempty                                          = PData mempty mempty
+  mappend (PData w1 a1) (PData w2 a2)             = PData (w1 `mappend` w2) (a1 `mappend` a2)
 instance Monoid Updates where
-  mempty = Updates []
+  mempty                                          = Updates []
   (Updates (u1:u1s)) `mappend` (Updates (u2:u2s)) = Updates $ u3 : (u1s `mappend` u2s)
-    where u3 = fromMtx $ toMtx u1 + toMtx u2
-  (Updates []) `mappend` u2s = u2s
-  u1s `mappend` (Updates []) = u1s
+    where u3                                      = fromMtx $ toMtx u1 + toMtx u2
+  (Updates []) `mappend` u2s                      = u2s
+  u1s `mappend` (Updates [])                      = u1s
 
 instance HasMtx Update where
-  toMtx = unUpdate
-  fromMtx = mkUpdate
+  toMtx                                           = unUpdate
+  fromMtx                                         = mkUpdate
 
 {--------------------------------------------------------------------------
 -                            Helper Functions                            -
 --------------------------------------------------------------------------}
-onElements :: HasVec a => ([Double] -> [Double]) -> a -> a
-onElements f = fromVec . fromList . f . toList . toVec
+onElements :: HasVec a
+  => ([Double] -> [Double])
+  -> a -> a
+onElements f                            = fromVec . fromList . f . toList . toVec
 
 withBias :: HasVec a => a -> a
-withBias = onElements (1 :)
+withBias                                = onElements (1 :)
 
 withoutBias :: HasVec a => a -> a
-withoutBias = onElements tail
+withoutBias                             = onElements tail
 
 (><) :: Signal -> ErrorSignal -> Update
-(><) (Sig sig) (ErrSig err) = fromMtx $ sig `outer` err
+(><) (Sig sig) (ErrSig err)             = fromMtx $ sig `outer` err

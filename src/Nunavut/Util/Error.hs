@@ -4,7 +4,7 @@ module Nunavut.Util.Error(
   unError
   ) where
 
-import Data.Text.Lazy (Text)
+import           Data.Text.Lazy (Text)
 
 {--------------------------------------------------------------------------
 -                                 Types                                  -
@@ -13,4 +13,4 @@ newtype Error = Error { unError :: Text }
   deriving (Show)
 
 mkError :: Text -> Error
-mkError = Error
+mkError                  = Error
